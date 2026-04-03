@@ -78,9 +78,9 @@
       document.getElementById("os").append(liff.getOS())
       document.getElementById("language").append(liff.getLanguage())
       document.getElementById("version").append(liff.getVersion())  
-      document.getelementbyid("accessToken").append(liff.gerAccessToken())
+      document.getElementById("accessToken").append(liff.getAccessToken())
       document.getElementById("isInClient").append(liff.isInClient())
-      if(liff.isInClient*()){
+      if(liff.isInClient()){
          document.getElementById("btnLogOut").style.display="none"
     
       }else{
