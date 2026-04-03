@@ -108,6 +108,11 @@
     async function main() {
       
       await liff.init({ liffId: "2009684330-hseYstha" })
+
+      console.log("INIT DONE")
+      console.log("isInClient:", liff.isInClient())
+      console.log("isLoggedIn:", liff.isLoggedIn())
+
       getEnvironment()
       getUserProfile()
       // getContext()
