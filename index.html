@@ -56,23 +56,17 @@
     function closed() {
     }
 
-    async function scanCode() {
-  if (!liff.isInClient()) {
-    alert("กรุณาเปิดผ่าน LINE เท่านั้น")
-    return
-  }
+ async function scanCode() {
+  alert("start scan")
+
+  console.log("isInClient:", liff.isInClient())
 
   try {
     const result = await liff.scanCodeV2()
-    
-    document.getElementById("scanCode").innerHTML =
-      "<b>Code:</b> " + result.value
-
-    console.log("SCAN RESULT:", result.value)
-
+    alert("RESULT: " + result.value)
   } catch (err) {
-    console.error("SCAN ERROR:", err)
-    alert("Scan ไม่สำเร็จ: " + err.message)
+    alert("ERROR: " + err.message)
+    console.error(err)
   }
 }
     
