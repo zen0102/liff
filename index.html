@@ -64,7 +64,7 @@
   try {
     const result = await liff.scanCodeV2()
     location.reload()
-    
+
     alert("RESULT: " + result.value)
   } catch (err) {
     alert("ERROR: " + err.message)
@@ -119,7 +119,12 @@
     async function main() {
       
       await liff.init({ liffId: "2009684330-hseYstha" })
-
+  // 🔥 สำคัญ: เช็ค token ด้วย
+      if (!liff.isLoggedIn() || !liff.getAccessToken()) {
+          liff.logout()
+          liff.login()
+          return
+      }
 //      console.log("INIT DONE")
 //      console.log("isInClient:", liff.isInClient())
 //      console.log("isLoggedIn:", liff.isLoggedIn())
