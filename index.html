@@ -63,6 +63,8 @@
 
   try {
     const result = await liff.scanCodeV2()
+    location.reload()
+    
     alert("RESULT: " + result.value)
   } catch (err) {
     alert("ERROR: " + err.message)
