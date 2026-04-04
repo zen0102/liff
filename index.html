@@ -151,15 +151,19 @@
 async function main() {
   await liff.init({ liffId: "2009684330-hseYstha" })
 
+  console.log("=== LIFF DEBUG ===")
+  console.log("isInClient:", liff.isInClient())
+  console.log("isLoggedIn:", liff.isLoggedIn())
+  console.log("context:", liff.getContext())
+  console.log("accessToken:", liff.getAccessToken())
+
   if (!liff.isLoggedIn()) {
     liff.login()
     return
   }
 
-  console.log("isInClient:", liff.isInClient())
-
   if (!liff.isInClient()) {
-    alert("ต้องเปิดผ่าน LINE เท่านั้น")
+    alert("NOT in LINE")
     return
   }
 
