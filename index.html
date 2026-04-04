@@ -135,19 +135,46 @@
       }
     }
 
-    async function main() {
+   // async function main() {
       
-      await liff.init({ liffId: "2009684330-hseYstha" })
-      document.getElementById("isLoggedIn").append(liff.isLoggedIn())
+   //   await liff.init({ liffId: "2009684330-hseYstha" })
+   //   document.getElementById("isLoggedIn").append(liff.isLoggedIn())
 
-      if(liff.isLoggedIn()){
-         getEnvironment()
-         getUserProfile()
-         getContext()
-      }
+   //   if(liff.isLoggedIn()){
+   //      getEnvironment()
+   //      getUserProfile()
+   //      getContext()
+   //   }
       // getFriendship()
       // createUniversalLink()
-    }
+    //}
+async function main() {
+  await liff.init({ liffId: "2009684330-hseYstha" })
+
+  if (!liff.isLoggedIn()) {
+    liff.login()
+    return
+  }
+
+  console.log("isInClient:", liff.isInClient())
+
+  if (!liff.isInClient()) {
+    alert("ต้องเปิดผ่าน LINE เท่านั้น")
+    return
+  }
+
+  getEnvironment()
+  await getUserProfile()
+  getContext()
+}
+
+
+
+
+
+
+
+
     main()
   </script>
 </body>
