@@ -151,11 +151,17 @@
 async function main() {
   await liff.init({ liffId: "2009684330-hseYstha" })
 
-  console.log("=== LIFF DEBUG ===")
-  console.log("isInClient:", liff.isInClient())
-  console.log("isLoggedIn:", liff.isLoggedIn())
-  console.log("context:", liff.getContext())
-  console.log("accessToken:", liff.getAccessToken())
+// console.log("=== LIFF DEBUG ===")
+//  console.log("isInClient:", liff.isInClient())
+//  console.log("isLoggedIn:", liff.isLoggedIn())
+//  console.log("context:", liff.getContext())
+//  console.log("accessToken:", liff.getAccessToken())
+alert("isInClient: " + liff.isInClient())
+alert("isLoggedIn: " + liff.isLoggedIn())
+
+const ctx = liff.getContext()
+alert("context: " + JSON.stringify(ctx))
+
 
   if (!liff.isLoggedIn()) {
     liff.login()
