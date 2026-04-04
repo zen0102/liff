@@ -54,6 +54,7 @@
     }
 
     function closed() {
+      liff.closeWindow()
     }
 
  async function scanCode() {
@@ -63,8 +64,7 @@
 
   try {
     const result = await liff.scanCodeV2()
-    location.reload()
-
+    document.getElementById("scanCode").append(result.value)
     alert("RESULT: " + result.value)
   } catch (err) {
     alert("ERROR: " + err.message)
@@ -73,21 +73,40 @@
  }
     
 
-
-
-
-
-
     function openWindow() {
+      liff.openWindow({url:"https://line.me",
+        external:true
+      })
     }
 
     async function getFriendship() {
     }
 
     async function sendMsg() {
+       if(liff.getContext().type !== "none"){
+
+          await liff.sendMessage([
+             {
+              "type":"sticker",
+              "stickerId":1,
+              "packageId":1
+
+
+             }
+
+
+          ])
+          alert("Message sent")
+       }
     }
 
     function getContext() {
+      document.getElementById("type").append(liff.getContext().type)  
+      document.getElementById("viewType").append(liff.getContext().viewType) 
+      document.getElementById("utouId").append(liff.getContext().utouId) 
+      document.getElementById("roomId").append(liff.getContext().roomId) 
+      document.getElementById("groupId").append(liff.getContext().groupId) 
+
     }
 
     async function getUserProfile() {
@@ -119,19 +138,13 @@
     async function main() {
       
       await liff.init({ liffId: "2009684330-hseYstha" })
-  // 🔥 สำคัญ: เช็ค token ด้วย
-      if (!liff.isLoggedIn() || !liff.getAccessToken()) {
-          liff.logout()
-          liff.login()
-          return
-      }
-//      console.log("INIT DONE")
-//      console.log("isInClient:", liff.isInClient())
-//      console.log("isLoggedIn:", liff.isLoggedIn())
+      document.getElementById("isLoggedIn").append(liff.isLoggedIn())
 
-      getEnvironment()
-      getUserProfile()
-      // getContext()
+      if(liff.isLoggedIn()){
+         getEnvironment()
+         getUserProfile()
+         getContext()
+      }
       // getFriendship()
       // createUniversalLink()
     }
