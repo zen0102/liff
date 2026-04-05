@@ -82,23 +82,50 @@
     async function getFriendship() {
     }
 
+
+//    async function sendMsg() {
+//       if(liff.getContext().type !== "none"){
+
+//          await liff.sendMessage([
+//             {
+//              "type":"sticker",
+//              "stickerId":1,
+//             "packageId":1
+//             }
+//          ])
+//          alert("Message sent")
+//       }
+//    }
+
     async function sendMsg() {
-       if(liff.getContext().type !== "none"){
+  if (!liff.isInClient()) {
+    alert("NOT in LINE")
+    return
+  }
 
-          await liff.sendMessage([
-             {
-              "type":"sticker",
-              "stickerId":1,
-              "packageId":1
+  const context = liff.getContext()
+  if (!context || context.type === "none") {
+    alert("No chat context")
+    return
+  }
+
+  try {
+    await liff.sendMessage([
+      {
+        type: "text",
+        text: "Hello test"
+      }
+    ])
+    alert("✅ sent success")
+  } catch (err) {
+    alert("❌ ERROR: " + err.message)
+    console.error(err)
+  }
+}
 
 
-             }
 
 
-          ])
-          alert("Message sent")
-       }
-    }
 
     function getContext() {
       document.getElementById("type").append(liff.getContext().type)  
