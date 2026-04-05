@@ -110,12 +110,23 @@
   }
 
   try {
-    await liff.sendMessages([
-      {
-        type: "text",
-        text: "Hello test"
-      }
-    ])
+ //   await liff.sendMessages([
+ //     {
+ //       type: "text",
+ //       text: "Hello test"
+ //     }
+ //   ])
+          await liff.sendMessage([
+             {
+              "type":"sticker",
+              "stickerId":1,
+             "packageId":1
+             }
+          ])
+
+
+
+
     alert("✅ sent success")
   } catch (err) {
     alert("❌ ERROR: " + err.message)
