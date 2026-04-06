@@ -63,7 +63,7 @@
   console.log("isInClient:", liff.isInClient())
 
   try {
-    const result = await liff.scanCode()
+    const result = await liff.scanCodeV2()
     document.getElementById("scanCode").append(result.value)
     alert("RESULT: " + result.value)
   } catch (err) {
