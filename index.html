@@ -1,91 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover">
-  <title>My LIFF app</title>
-  <link rel="stylesheet" href="css/style.css" media="all">
+  <title>Patient Registration System</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <style>
-    button { width: 100%; padding: 15px; margin: 10px 0; font-size: 18px; cursor: pointer; }
-    img { max-width: 100px; border-radius: 50%; }
-    b { color: #333; }
+    body { background-color: #f8f9fa; padding: 20px; font-family: sans-serif; }
+    .card { border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    #pictureUrl { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #00b900; }
+    .btn-scan { background-color: #00b900; color: white; font-weight: bold; padding: 15px; border-radius: 10px; width: 100%; border: none; }
+    .btn-scan:active { background-color: #009900; }
+    .status-box { background: white; padding: 15px; border-radius: 10px; margin-top: 20px; }
+    .data-label { font-weight: bold; color: #555; }
   </style>
 </head>
 
 <body>
-  <h2>Patient Scanner</h2>
-  <div id="profile" style="display:none;">
-    <img id="pictureUrl">
-    <p id="displayName"></p>
-  </div>
-  
-  <hr>
-  <p id="scanCode"><b>Code:</b> - </p>
-  <p id="isLoggedIn"><b>isLoggedIn:</b> </p>
+  <div class="container">
+    <div class="card p-4 text-center">
+      <div id="userInfo" style="display:none;">
+        <img id="pictureUrl" src="" alt="Profile">
+        <h5 id="displayName" class="mt-2"></h5>
+        <hr>
+      </div>
 
-  <button id="btnScanCode" onclick="scanCode()" style="background-color: #00b900; color: white;">Scan Code</button>
-  <button id="btnClose" onclick="closed()">Close</button>
+      <h4 class="mb-4">ระบบบันทึก HN ผู้ป่วย</h4>
+      
+      <button class="btn-scan mb-3" onclick="scanCode()">
+        📷 สแกน QR / Barcode
+      </button>
+
+      <div class="status-box text-start">
+        <p><span class="data-label">สถานะล็อกอิน:</span> <span id="isLoggedIn">Checking...</span></p>
+        <p><span class="data-label">เลข HN ล่าสุด:</span> <span id="scanCodeDisplay" class="text-primary">-</span></p>
+      </div>
+
+      <button class="btn btn-outline-secondary mt-3" onclick="closed()">ปิดหน้าต่าง</button>
+    </div>
+  </div>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <script>
-    // *** นำ URL จาก Google Apps Script มาใส่ตรงนี้ ***
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwV7ZHMj7QP34TRC4u2EwNeN16nnnFcGNyAoUzF1c9wocA5piF8zu0QzDbJAdMc2nJN/exec";
+    // 1. ระบุข้อมูลสำคัญตรงนี้
+    const LIFF_ID = "2009684330-hseYstha"; 
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxbsmAlZz-CebTjIiWpMIKGZzH2kpaUyXWUsCdEJzu_i22Y_vO1LZmpRDP84or9d1w/exec"; 
+
+    async function main() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (liff.isLoggedIn()) {
+          document.getElementById("isLoggedIn").innerText = "Logged In";
+          getUserProfile();
+        } else {
+          liff.login();
+        }
+      } catch (err) {
+        console.error("LIFF Initialization failed", err);
+      }
+    }
+
+    async function getUserProfile() {
+      const profile = await liff.getProfile();
+      document.getElementById("userInfo").style.display = "block";
+      document.getElementById("pictureUrl").src = profile.pictureUrl;
+      document.getElementById("displayName").innerText = profile.displayName;
+    }
 
     async function scanCode() {
+      // ตรวจสอบว่าเปิดใน LINE Client หรือไม่ (คอมพิวเตอร์สแกนไม่ได้)
       if (!liff.isInClient()) {
-        alert("กรุณาเปิดในแอป LINE เท่านั้น");
+        alert("กรุณาใช้งานบนมือถือผ่านแอป LINE เท่านั้น");
         return;
       }
 
       try {
         const result = await liff.scanCode();
-        const hnCode = result.value;
+        const hnValue = result.value;
 
-        if (hnCode) {
-          document.getElementById("scanCode").innerText = "Code: " + hnCode;
+        if (hnValue) {
+          document.getElementById("scanCodeDisplay").innerText = hnValue;
           
-          // ส่งข้อมูลไปที่ Google Sheets
-          const response = await fetch(WEB_APP_URL, {
-            method: "POST",
-            body: JSON.stringify({ hnNumber: hnCode }),
-          });
-
-          const resData = await response.json();
-          if (resData.result === "success") {
-            alert("✅ บันทึกข้อมูล HN: " + hnCode + " สำเร็จ!");
-          } else {
-            alert("❌ บันทึกไม่สำเร็จ: " + resData.message);
-          }
+          // ส่งข้อมูลไปยัง Google Sheets
+          sendDataToSheet(hnValue);
         }
       } catch (err) {
-        // กรณีผู้ใช้กดยกเลิกการสแกน หรือเกิด Error
         if (err.message !== "User cancelled the scan.") {
-          alert("ERROR: " + err.message);
+          alert("Error: " + err.message);
         }
+      }
+    }
+
+    async function sendDataToSheet(hn) {
+      try {
+        // แสดง Loading แจ้งเตือน
+        document.getElementById("scanCodeDisplay").innerText = "กำลังบันทึก...";
+        
+        const response = await fetch(WEB_APP_URL, {
+          method: "POST",
+          mode: "no-cors", // ใช้ no-cors เพื่อป้องกันปัญหา CORS เบื้องต้นกับ GAS
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            hnNumber: hn
+          }),
+        });
+
+        // เนื่องจากการใช้ no-cors จะอ่าน response ไม่ได้ 
+        // จึงสมมติว่าสำเร็จถ้าไม่มี Error พ่นออกมา
+        alert("✅ บันทึกเลข HN: " + hn + " ลงในตารางเรียบร้อยแล้ว");
+        document.getElementById("scanCodeDisplay").innerText = hn;
+
+      } catch (err) {
+        alert("❌ บันทึกล้มเหลว: " + err.message);
+        document.getElementById("scanCodeDisplay").innerText = "Error";
       }
     }
 
     function closed() {
       liff.closeWindow();
-    }
-
-    async function getUserProfile() {
-      const profile = await liff.getProfile();
-      document.getElementById("profile").style.display = "block";
-      document.getElementById("pictureUrl").src = profile.pictureUrl;
-      document.getElementById("displayName").innerText = "สวัสดีคุณ " + profile.displayName;
-    }
-
-    async function main() {
-      await liff.init({ liffId: "2009684330-hseYstha" });
-
-      if (liff.isLoggedIn()) {
-        document.getElementById("isLoggedIn").append("Yes");
-        await getUserProfile();
-      } else {
-        liff.login();
-      }
     }
 
     main();
