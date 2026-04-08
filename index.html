@@ -45,29 +45,67 @@
     }
 
     // 🔥 เพิ่ม function insert Google Sheet
-    async function insertHN(code) {
-      try {
-        const res = await fetch(GAS_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ code: code })
-        });
+  //  async function insertHN(code) {
+  //    try {
+   //     const res = await fetch(GAS_URL, {
+   //       method: "POST",
+   //       headers: {
+   //         "Content-Type": "application/json"
+   //       },
+  //        body: JSON.stringify({ code: code })
+  //     });
 
-        const data = await res.json();
+   //     const data = await res.json();
 
-        if (data.status === "success") {
-          alert("✅ Saved to Sheet: " + code);
-        } else {
-          alert("❌ " + data.message);
-        }
+  //      if (data.status === "success") {
+  //        alert("✅ Saved to Sheet: " + code);
+  //      } else {
+  //        alert("❌ " + data.message);
+  //      }
 
-      } catch (err) {
-        alert("❌ ERROR: " + err.message);
-        console.error(err);
-      }
+  //    } catch (err) {
+  //      alert("❌ ERROR: " + err.message);
+  //      console.error(err);
+  //   }
+  //  }
+async function insertHN(code) {
+  const url = "YOUR_GAS_WEB_APP_URL";
+
+  try {
+    console.log("POST to:", url);
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ code: code })
+    });
+
+    console.log("response status:", res.status);
+
+    const text = await res.text();
+    console.log("response text:", text);
+
+    const data = JSON.parse(text);
+
+    if (data.status === "success") {
+      alert("✅ Saved: " + code);
+    } else {
+      alert("❌ " + data.message);
     }
+
+  } catch (err) {
+    alert("❌ FETCH ERROR: " + err.message);
+    console.error("FETCH ERROR:", err);
+  }
+}
+
+
+
+
+
+
 
     // 🔥 แก้ scanCode ให้ยิงไป Sheet
     async function scanCode() {
