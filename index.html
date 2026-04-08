@@ -30,21 +30,46 @@
   <p id="universalLink2"><b>Universal Link with Query params:</b> </p>
   <p><a href="liff/path/?param=9">Link to Path</a></p>
 
-  <!-- ✅ เหลือแค่ 2 ปุ่ม -->
+  <!-- ปุ่ม -->
   <button id="btnScanCode" onclick="scanCode()">Scan Code</button>
   <button id="btnClose" onclick="closed()">Close</button>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <script>
-    function createUniversalLink() {}
-    async function shareMsg() {}
-    function logOut() {}
+    const LIFF_ID = "2009684330-hseYstha";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxEL65cpaV_w5HYphqB9LROrKXtNKBkIoBMyQF5-DGsPCuWnBj-BdcenEVvGYkwUQ/exec"; // 🔥 ใส่ URL จริง
 
     function closed() {
       liff.closeWindow()
     }
 
+    // 🔥 เพิ่ม function insert Google Sheet
+    async function insertHN(code) {
+      try {
+        const res = await fetch(GAS_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ code: code })
+        });
+
+        const data = await res.json();
+
+        if (data.status === "success") {
+          alert("✅ Saved to Sheet: " + code);
+        } else {
+          alert("❌ " + data.message);
+        }
+
+      } catch (err) {
+        alert("❌ ERROR: " + err.message);
+        console.error(err);
+      }
+    }
+
+    // 🔥 แก้ scanCode ให้ยิงไป Sheet
     async function scanCode() {
       alert("start scan")
 
@@ -52,8 +77,15 @@
 
       try {
         const result = await liff.scanCode()
-        document.getElementById("scanCode").innerText = "Code: " + result.value
-        alert("RESULT: " + result.value)
+        const code = result.value
+
+        document.getElementById("scanCode").innerText = "Code: " + code
+
+        // 👉 insert ลง Google Sheet
+        await insertHN(code)
+
+        alert("RESULT: " + code)
+
       } catch (err) {
         alert("ERROR: " + err.message)
         console.error(err)
@@ -67,41 +99,13 @@
       })
     }
 
-    async function getFriendship() {}
-
-    async function sendMsg() {
-      if (!liff.isInClient()) {
-        alert("NOT in LINE")
-        return
-      }
-
-      const context = liff.getContext()
-      if (!context || context.type === "none") {
-        alert("No chat context")
-        return
-      }
-
-      try {
-        await liff.sendMessages([
-          {
-            "type": "sticker",
-            "stickerId": 1,
-            "packageId": 1
-          }
-        ])
-        alert("✅ sent success")
-      } catch (err) {
-        alert("❌ ERROR: " + err.message)
-        console.error(err)
-      }
-    }
-
     function getContext() {
-      document.getElementById("type").append(liff.getContext().type)
-      document.getElementById("viewType").append(liff.getContext().viewType)
-      document.getElementById("utouId").append(liff.getContext().utouId)
-      document.getElementById("roomId").append(liff.getContext().roomId)
-      document.getElementById("groupId").append(liff.getContext().groupId)
+      const ctx = liff.getContext()
+      document.getElementById("type").append(ctx.type)
+      document.getElementById("viewType").append(ctx.viewType)
+      document.getElementById("utouId").append(ctx.utouId)
+      document.getElementById("roomId").append(ctx.roomId)
+      document.getElementById("groupId").append(ctx.groupId)
     }
 
     async function getUserProfile() {
@@ -110,7 +114,11 @@
       document.getElementById("userId").append(profile.userId)
       document.getElementById("statusMessage").append(profile.statusMessage)
       document.getElementById("displayName").append(profile.displayName)
-      document.getElementById("decodedIDToken").append(liff.getDecodedIDToken().email)
+
+      const idToken = liff.getDecodedIDToken()
+      if (idToken) {
+        document.getElementById("decodedIDToken").append(idToken.email || "")
+      }
     }
 
     function getEnvironment() {
@@ -122,14 +130,23 @@
     }
 
     async function main() {
-      await liff.init({ liffId: "2009684330-hseYstha" })
+      try {
+        await liff.init({ liffId: LIFF_ID })
 
-      document.getElementById("isLoggedIn").append(liff.isLoggedIn())
+        document.getElementById("isLoggedIn").append(liff.isLoggedIn())
 
-      if (liff.isLoggedIn()) {
+        if (!liff.isLoggedIn()) {
+          liff.login()
+          return
+        }
+
         getEnvironment()
         await getUserProfile()
         getContext()
+
+      } catch (err) {
+        alert("LIFF init error: " + err.message)
+        console.error(err)
       }
     }
 
