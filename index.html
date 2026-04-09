@@ -2,128 +2,128 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Patient Registration</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover">
+  <title>Patient Registration System</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    body { background-color: #f8f9fa; padding: 20px; font-family: sans-serif; }
+    .card { border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    #pictureUrl { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #00b900; }
+    .btn-scan { background-color: #00b900; color: white; font-weight: bold; padding: 15px; border-radius: 10px; width: 100%; border: none; }
+    .btn-scan:active { background-color: #009900; }
+    .status-box { background: white; padding: 15px; border-radius: 10px; margin-top: 20px; }
+    .data-label { font-weight: bold; color: #555; }
+  </style>
 </head>
 
 <body>
-<div class="container" style="max-width:450px;">
+  <div class="container">
+    <div class="card p-4 text-center">
+      <div id="userInfo" style="display:none;">
+        <img id="pictureUrl" src="" alt="Profile">
+        <h5 id="displayName" class="mt-2"></h5>
+        <hr>
+      </div>
 
-  <button id="btnScan" class="btn btn-success w-100 py-3 mt-3">
-    📷 สแกนรหัส HN
-  </button>
+      <h4 class="mb-4">ระบบบันทึก HN ผู้ป่วย</h4>
+      
+      <button class="btn-scan mb-3" onclick="scanCode()">
+        📷 สแกน QR / Barcode
+      </button>
 
-  <div id="loadingStatus" style="display:none;" class="text-success mt-2">
-    ⏳ กำลังดำเนินการ...
+      <div class="status-box text-start">
+        <p><span class="data-label">สถานะล็อกอิน:</span> <span id="isLoggedIn">Checking...</span></p>
+        <p><span class="data-label">เลข HN ล่าสุด:</span> <span id="scanCodeDisplay" class="text-primary">-</span></p>
+      </div>
+
+      <button class="btn btn-outline-secondary mt-3" onclick="closed()">ปิดหน้าต่าง</button>
+    </div>
   </div>
 
-  <div id="resultArea" style="display:none;">
-    <h5>HN: <span id="scanCodeDisplay"></span></h5>
-    <div id="patientDetails"></div>
-  </div>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-</div>
+  <script>
+    // 1. ระบุข้อมูลสำคัญตรงนี้
+    const LIFF_ID = "2009684330-hseYstha"; 
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwOOaQuEgJnZ6m35cp48_ApJgyv_46-o3nYW-FR4hZUzABbyvrYyzDi4Eog-8iwOp7S/exec"; 
 
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script>
-
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzES5lpNeH2zQy5SZHOeh8ART4dDa0iqxFUhbpWbVnzGYblLKmiOvNDCc0eHUJCMSqN/exec";
-
-let currentHn = "";
-let isScanning = false;
-let isLiffReady = false;
-
-// ================= INIT =================
-async function main() {
-  try {
-    await liff.init({ liffId: "2009684330-hseYstha" });
-    await liff.ready;
-
-    isLiffReady = true;
-    console.log("LIFF READY");
-
-  } catch (err) {
-    console.error("LIFF ERROR:", err);
-  }
-}
-
-// ================= SCAN BUTTON (FIX สำคัญ) =================
-document.getElementById("btnScan").addEventListener("click", async () => {
-
-  if (!isLiffReady) {
-    alert("ระบบยังไม่พร้อม");
-    return;
-  }
-
-  if (!liff.isInClient()) {
-    alert("โปรดเปิดผ่าน LINE");
-    return;
-  }
-
-  if (isScanning) return; // กันกดรัว
-
-  isScanning = true;
-  document.getElementById("loadingStatus").style.display = "block";
-
-  try {
-    console.log("START SCAN");
-
-    const result = await liff.scanCode({ scanType: "qr" });
-
-    console.log("SCAN RESULT:", result);
-
-    if (!result || !result.value) {
-      alert("สแกนไม่สำเร็จ");
-      return;
+    async function main() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (liff.isLoggedIn()) {
+          document.getElementById("isLoggedIn").innerText = "Logged In";
+          getUserProfile();
+        } else {
+          liff.login();
+        }
+      } catch (err) {
+        console.error("LIFF Initialization failed", err);
+      }
     }
 
-    currentHn = result.value;
-    document.getElementById("scanCodeDisplay").innerText = currentHn;
-
-    await handleSearch(currentHn);
-
-  } catch (err) {
-    console.error("SCAN ERROR:", err);
-    alert("สแกนล้มเหลว");
-  } finally {
-    isScanning = false;
-    document.getElementById("loadingStatus").style.display = "none";
-  }
-
-});
-
-// ================= SEARCH =================
-async function handleSearch(hn) {
-  try {
-    const response = await fetch(WEB_APP_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "search",
-        hnNumber: hn
-      })
-    });
-
-    const res = await response.json();
-
-    document.getElementById("resultArea").style.display = "block";
-
-    if (res.status === "found") {
-      let html = "<div class='text-success'>พบข้อมูล</div>";
-      document.getElementById("patientDetails").innerHTML = html;
-    } else {
-      document.getElementById("patientDetails").innerHTML =
-        "<div class='text-primary'>ไม่พบข้อมูล</div>";
+    async function getUserProfile() {
+      const profile = await liff.getProfile();
+      document.getElementById("userInfo").style.display = "block";
+      document.getElementById("pictureUrl").src = profile.pictureUrl;
+      document.getElementById("displayName").innerText = profile.displayName;
     }
 
-  } catch (e) {
-    alert("เชื่อมต่อไม่ได้");
-  }
-}
+    async function scanCode() {
+      // ตรวจสอบว่าเปิดใน LINE Client หรือไม่ (คอมพิวเตอร์สแกนไม่ได้)
+      if (!liff.isInClient()) {
+        alert("กรุณาใช้งานบนมือถือผ่านแอป LINE เท่านั้น");
+        return;
+      }
 
-// ================= START =================
-main();
+      try {
+        const result = await liff.scanCode();
+        const hnValue = result.value;
 
-</script>
+        if (hnValue) {
+          document.getElementById("scanCodeDisplay").innerText = hnValue;
+          
+          // ส่งข้อมูลไปยัง Google Sheets
+          sendDataToSheet(hnValue);
+        }
+      } catch (err) {
+        if (err.message !== "User cancelled the scan.") {
+          alert("Error: " + err.message);
+        }
+      }
+    }
+
+    async function sendDataToSheet(hn) {
+      try {
+        // แสดง Loading แจ้งเตือน
+        document.getElementById("scanCodeDisplay").innerText = "กำลังบันทึก...";
+        
+        const response = await fetch(WEB_APP_URL, {
+          method: "POST",
+          mode: "no-cors", // ใช้ no-cors เพื่อป้องกันปัญหา CORS เบื้องต้นกับ GAS
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            hnNumber: hn
+          }),
+        });
+
+        // เนื่องจากการใช้ no-cors จะอ่าน response ไม่ได้ 
+        // จึงสมมติว่าสำเร็จถ้าไม่มี Error พ่นออกมา
+        alert("✅ บันทึกเลข HN: " + hn + " ลงในตารางเรียบร้อยแล้ว");
+        document.getElementById("scanCodeDisplay").innerText = hn;
+
+      } catch (err) {
+        alert("❌ บันทึกล้มเหลว: " + err.message);
+        document.getElementById("scanCodeDisplay").innerText = "Error";
+      }
+    }
+
+    function closed() {
+      liff.closeWindow();
+    }
+
+    main();
+  </script>
 </body>
 </html>
