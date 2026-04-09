@@ -24,7 +24,6 @@
 <body>
   <div class="container" style="max-width: 450px;">
     <div class="card text-center">
-      
       <div id="userInfo" class="profile-section" style="display:none;">
         <img id="pictureUrl" src="" alt="Profile">
         <h4 id="displayName" class="mb-1"></h4>
@@ -46,9 +45,9 @@
             <div id="scanCodeDisplay" class="hn-highlight mb-2">-</div>
 
             <div id="foundSection" class="form-area">
-              <p class="text-success fw-bold">✅ ข้อมูลปัจจุบันใน Sheet:</p>
+              <p class="text-success fw-bold">✅ ข้อมูลเดิมที่พบ:</p>
               <div id="patientDetails" class="mb-3"></div>
-              <label class="form-label fw-bold text-dark">แก้ไขวันเวลาเกิด:</label>
+              <label class="form-label fw-bold">ระบุวันเวลาเกิดใหม่:</label>
               <input type="datetime-local" id="editBirthDate" class="form-control mb-3 border-success">
               <button class="btn btn-success w-100 py-2" onclick="confirmSave()">ยืนยันการแก้ไข</button>
             </div> 
@@ -61,7 +60,6 @@
             </div>
           </div>
         </div>
-
         <button class="btn btn-link btn-sm mt-3 text-muted text-decoration-none" onclick="liff.closeWindow()">ปิดหน้าต่าง</button>
       </div>
     </div>
@@ -69,8 +67,9 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxwmvp72v64YWZ384b-5DIuK5i2ww0z_TX-AefEJRra-PR00gGTcbi2CVHw6jNNAUgr/exec"; 
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzES5lpNeH2zQy5SZHOeh8ART4dDa0iqxFUhbpWbVnzGYblLKmiOvNDCc0eHUJCMSqN/exec"; 
     let currentHn = "";
+    let originalPatientData = null;
 
     async function main() {
       try {
@@ -78,9 +77,7 @@
         if (liff.isLoggedIn()) {
           document.getElementById("isLoggedIn").innerText = "พร้อมสแกน";
           getUserProfile();
-        } else {
-          liff.login();
-        }
+        } else { liff.login(); }
       } catch (err) { console.error(err); }
     }
 
@@ -104,97 +101,81 @@
     }
 
     async function handleSearch(hn) {
-      document.getElementById("loadingStatus").innerText = "⏳ กำลังค้นหา...";
       document.getElementById("loadingStatus").style.display = "block";
       document.getElementById("resultArea").style.display = "none";
-
       try {
         const response = await fetch(WEB_APP_URL, {
           method: "POST",
           body: JSON.stringify({ action: "search", hnNumber: hn })
         });
         const res = await response.json();
-
         document.getElementById("loadingStatus").style.display = "none";
         document.getElementById("resultArea").style.display = "block";
         document.getElementById("scanCodeDisplay").innerText = hn;
 
         if (res.status === "found") {
+          originalPatientData = res.data; // เก็บข้อมูลลงตัวแปร Global
           document.getElementById("foundSection").style.display = "block";
           document.getElementById("notFoundSection").style.display = "none";
           let html = "";
-          // แสดงข้อมูลดิบ (String) ที่ส่งมาจาก DisplayValues ของ Sheet ตรงๆ
           for (let key in res.data) {
-            if (res.data[key]) {
-              html += `<div class="data-row"><span class="data-label">${key}:</span> <span>${res.data[key]}</span></div>`;
-            }
+            if (res.data[key]) html += `<div class="data-row"><span class="data-label">${key}:</span> <span>${res.data[key]}</span></div>`;
           }
           document.getElementById("patientDetails").innerHTML = html;
         } else {
+          originalPatientData = null;
           document.getElementById("notFoundSection").style.display = "block";
           document.getElementById("foundSection").style.display = "none";
         }
       } catch (e) {
-        alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+        alert("การเชื่อมต่อล้มเหลว");
         document.getElementById("loadingStatus").style.display = "none";
       }
     }
 
- // --- ส่วนที่ปรับปรุงในฟังก์ชัน confirmSave() ---
+    async function confirmSave() {
+      const isUpdate = document.getElementById("foundSection").style.display === "block";
+      const bDateVal = isUpdate ? document.getElementById("editBirthDate").value : document.getElementById("newBirthDate").value;
 
-async function confirmSave() {
-  const isUpdate = document.getElementById("foundSection").style.display === "block";
-  const bDateInput = isUpdate ? document.getElementById("editBirthDate").value : document.getElementById("newBirthDate").value;
+      if (!bDateVal) { alert("กรุณาระบุวันเวลาเกิด"); return; }
 
-  if (!bDateInput) { 
-    alert("⚠️ กรุณาระบุวันเวลาเกิดก่อนบันทึก"); 
-    return; 
-  }
+      let confirmText = "";
+      if (isUpdate && originalPatientData) {
+        // ดึงค่าจากหัวตาราง Column G (ระบุให้ตรงกับชื่อหัวตารางใน Sheet)
+        const oldVal = originalPatientData["วันเวลาเกิด"] || "ว่าง";
+        
+        // แปลงค่าใหม่เป็น format อ่านง่าย
+        const d = new Date(bDateVal);
+        const newVal = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        
+        confirmText = `❓ ยืนยันการแก้ไขข้อมูล\n------------------------\nค่าเดิม: ${oldVal}\nค่าใหม่: ${newVal}\n------------------------`;
+      } else {
+        confirmText = "❓ ยืนยันบันทึกข้อมูลใหม่?";
+      }
 
-  // เตรียมข้อความยืนยัน
-  let confirmText = "";
-  
-  if (isUpdate) {
-    // ดึงค่าเดิมจากข้อมูลที่ Search เจอ (คอลัมน์ G คือ "วันเวลาเกิด")
-    // หมายเหตุ: ชื่อ Key ต้องตรงกับหัว Column ใน Google Sheet ของคุณ
-    const oldDate = document.getElementById("patientDetails").innerText.match(/วันเวลาเกิด:\s*(.*)/);
-    const displayOldDate = oldDate ? oldDate[1] : "ไม่ระบุ";
-    
-    // แปลงค่าจาก Input เป็น Format อ่านง่าย (dd/MM/yyyy HH:mm)
-    const dateObj = new Date(bDateInput);
-    const displayNewDate = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
-
-    confirmText = `❓ ยืนยันการแก้ไขข้อมูล\n------------------------\nค่าเดิม: ${displayOldDate}\nค่าใหม่: ${displayNewDate}\n------------------------`;
-  } else {
-    confirmText = "❓ ยืนยันการเพิ่มข้อมูลคนไข้ใหม่ลงในระบบ?";
-  }
-
-  if (!confirm(confirmText)) return;
-
-  // ส่วนการ Fetch ข้อมูล (คงเดิม)
-  try {
-    document.getElementById("loadingStatus").innerText = "⏳ กำลังบันทึก...";
-    document.getElementById("loadingStatus").style.display = "block";
-
-    const response = await fetch(WEB_APP_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "save",
-        hnNumber: currentHn,
-        birthDate: bDateInput
-      })
-    });
-    const res = await response.json();
-
-    if (res.status === "success") {
-      alert("✅ " + res.message);
-      location.reload(); 
+      if (confirm(confirmText)) {
+        saveData(bDateVal);
+      }
     }
-  } catch (e) {
-    alert("❌ บันทึกไม่สำเร็จ");
-    document.getElementById("loadingStatus").style.display = "none";
-  }
-}
+
+    async function saveData(bDate) {
+      document.getElementById("loadingStatus").innerText = "⏳ กำลังบันทึก...";
+      document.getElementById("loadingStatus").style.display = "block";
+      try {
+        const response = await fetch(WEB_APP_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "save", hnNumber: currentHn, birthDate: bDate })
+        });
+        const res = await response.json();
+        if (res.status === "success") {
+          alert("✅ " + res.message);
+          location.reload();
+        }
+      } catch (e) {
+        alert("บันทึกไม่สำเร็จ");
+        document.getElementById("loadingStatus").style.display = "none";
+      }
+    }
 
     main();
   </script>
