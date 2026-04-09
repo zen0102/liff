@@ -33,37 +33,37 @@
 
       <div class="card-body p-4">
         <button class="btn-scan mb-3" onclick="scanCode()">📷 สแกนรหัส HN</button>
-        <div id="loadingStatus" style="display:none; color: #00b900;" class="fw-bold mb-3">⏳ กำลังทำงาน...</div>
+        <div id="loadingStatus" style="display:none; color: #00b900;" class="fw-bold mb-3">⏳ กำลังประมวลผล...</div>
 
         <div class="status-box">
           <div id="resultArea" style="display:none;">
-            <span class="data-label">HN ที่สแกนได้:</span>
+            <span class="data-label">เลข HN ที่พบ:</span>
             <div id="scanCodeDisplay" class="hn-highlight mb-2">-</div>
 
             <div id="foundSection" class="form-area">
-              <p class="text-success fw-bold">🔎 พบข้อมูลเดิม:</p>
+              <p class="text-success fw-bold">🔎 ข้อมูลเดิมในระบบ:</p>
               <div id="patientDetails" class="mb-3"></div>
               
               <div class="old-val-box">
-                 <small class="text-muted d-block">วันเวลาเกิดปัจจุบันในระบบ:</small>
+                 <small class="text-muted d-block">วันเวลาเกิดปัจจุบัน:</small>
                  <strong id="oldBirthDateDisplay">-</strong>
               </div>
 
-              <label class="form-label fw-bold">เลือกวันเวลาเกิดใหม่:</label>
+              <label class="form-label fw-bold">ระบุวันเวลาเกิดใหม่:</label>
               <input type="datetime-local" id="editBirthDate" class="form-control mb-3">
-              <button class="btn btn-success w-100 py-2 fw-bold" onclick="confirmSave()">ยืนยันการแก้ไข</button>
+              <button class="btn btn-success w-100 py-2 fw-bold" onclick="confirmSave()">บันทึกการแก้ไข</button>
             </div>
 
             <div id="notFoundSection" class="form-area">
               <p class="text-primary fw-bold">🆕 ไม่พบข้อมูล - ลงทะเบียนใหม่:</p>
               <label class="form-label fw-bold">ระบุวันเวลาเกิด:</label>
               <input type="datetime-local" id="newBirthDate" class="form-control mb-3">
-              <button class="btn btn-primary w-100 py-2 fw-bold" onclick="confirmSave()">ยืนยันบันทึกข้อมูล</button>
+              <button class="btn btn-primary w-100 py-2 fw-bold" onclick="confirmSave()">ยืนยันลงทะเบียน</button>
             </div>
           </div>
         </div>
 
-        <button class="btn btn-link btn-sm mt-3 text-muted text-decoration-none" onclick="liff.closeWindow()">ปิด</button>
+        <button class="btn btn-link btn-sm mt-3 text-muted text-decoration-none" onclick="liff.closeWindow()">ปิดหน้าต่าง</button>
       </div>
     </div>
   </div>
@@ -92,12 +92,31 @@
 
     async function scanCode() {
       try {
-        const result = await liff.scanCode();
+        const result = await liff.scanCodeV2(); // ใช้ V2 ล่าสุด
         if (result.value) {
           currentHn = result.value;
           handleSearch(result.value);
         }
       } catch (err) { console.error(err); }
+    }
+
+    // ฟังก์ชันช่วยจัดรูปแบบวันที่ให้สวยงาม (ไทย)
+    function formatThaiDate(dateStr) {
+        if (!dateStr || dateStr === "ไม่มีข้อมูล") return dateStr;
+        let d = dateStr.includes('T') ? new Date(dateStr) : null;
+        
+        // ถ้าเป็นรูปแบบจาก Sheet (dd/MM/yyyy)
+        if (!d) {
+            const parts = dateStr.split(/[\/\s:]/);
+            d = new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]);
+        }
+
+        if (isNaN(d.getTime())) return dateStr;
+
+        const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+        const yearThai = d.getFullYear() + 543;
+        const timeStr = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
+        return `${d.getDate()} ${months[d.getMonth()]} ${yearThai} เวลา ${timeStr} น.`;
     }
 
     async function handleSearch(hn) {
@@ -120,7 +139,8 @@
         if (res.status === "found") {
           document.getElementById("foundSection").style.display = "block";
           oldBirthDate = res.data["วันเวลาเกิด"] || "ไม่มีข้อมูล";
-          document.getElementById("oldBirthDateDisplay").innerText = oldBirthDate;
+          // แสดงวันเกิดแบบไทย
+          document.getElementById("oldBirthDateDisplay").innerText = formatThaiDate(oldBirthDate);
 
           let html = "";
           for (let key in res.data) {
@@ -132,7 +152,7 @@
         } else {
           document.getElementById("notFoundSection").style.display = "block";
         }
-      } catch (e) { alert("Error connecting to server"); }
+      } catch (e) { alert("การเชื่อมต่อขัดข้อง"); }
     }
 
     async function confirmSave() {
@@ -141,10 +161,10 @@
 
       if (!bDate) { alert("กรุณาระบุวันเวลาเกิด"); return; }
       
-      const newVal = bDate.replace('T', ' ');
+      const readableDate = formatThaiDate(bDate);
       let confirmMsg = isUpdate 
-        ? `⚠️ ยืนยันการเปลี่ยนแปลง\n\n[เดิม]: ${oldBirthDate}\n[ใหม่]: ${newVal}`
-        : `ยืนยันบันทึกข้อมูลใหม่\n[วันเวลาเกิด]: ${newVal}`;
+        ? `⚠️ ยืนยันแก้ไขข้อมูล\n[เดิม]: ${formatThaiDate(oldBirthDate)}\n[ใหม่]: ${readableDate}`
+        : `ยืนยันลงทะเบียนใหม่\n[วันเกิด]: ${readableDate}`;
 
       if (!confirm(confirmMsg)) return;
 
@@ -159,7 +179,7 @@
           alert("✅ " + res.message);
           location.reload();
         }
-      } catch (e) { alert("Error saving data"); }
+      } catch (e) { alert("เกิดข้อผิดพลาดในการบันทึก"); }
     }
 
     main();
