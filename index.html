@@ -92,7 +92,7 @@
     async function scanCode() {
       if (!liff.isInClient()) { alert("โปรดใช้งานผ่านแอป LINE"); return; }
       try {
-        const result = await liff.scanCode();
+        const result = await liff.scanCodeV2();
         if (result.value) {
           currentHn = result.value;
           handleSearch(result.value);
