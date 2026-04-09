@@ -1,129 +1,140 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover">
-  <title>Patient Registration System</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <style>
-    body { background-color: #f8f9fa; padding: 20px; font-family: sans-serif; }
-    .card { border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    #pictureUrl { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #00b900; }
-    .btn-scan { background-color: #00b900; color: white; font-weight: bold; padding: 15px; border-radius: 10px; width: 100%; border: none; }
-    .btn-scan:active { background-color: #009900; }
-    .status-box { background: white; padding: 15px; border-radius: 10px; margin-top: 20px; }
-    .data-label { font-weight: bold; color: #555; }
-  </style>
+  <title>My LIFF app</title>
+  <link rel="stylesheet" href="css/style.css" media="all">
 </head>
 
 <body>
-  <div class="container">
-    <div class="card p-4 text-center">
-      <div id="userInfo" style="display:none;">
-        <img id="pictureUrl" src="" alt="Profile">
-        <h5 id="displayName" class="mt-2"></h5>
-        <hr>
-      </div>
+  <p id="os"><b>OS:</b> </p>
+  <p id="language"><b>Language:</b> </p>
+  <p id="version"><b>Version:</b> </p>
+  <p id="isInClient"><b>isInClient:</b> </p>
+  <p id="accessToken"><b>AccessToken:</b> </p>
+  <img id="pictureUrl">
+  <p id="userId"><b>userId:</b> </p>
+  <p id="displayName"><b>displayName:</b> </p>
+  <p id="statusMessage"><b>statusMessage:</b> </p>
+  <p id="decodedIDToken"><b>email:</b> </p>
+  <p id="type"><b>type:</b> </p>
+  <p id="viewType"><b>viewType:</b> </p>
+  <p id="utouId"><b>utouId:</b> </p>
+  <p id="roomId"><b>roomId:</b> </p>
+  <p id="groupId"><b>groupId:</b> </p>
+  <p id="friendship"><b>isFriendship:</b> </p>
+  <p id="scanCode"><b>Code:</b> </p>
+  <p id="isLoggedIn"><b>isLoggedIn:</b> </p>
+  <p id="universalLink1"><b>Universal Link:</b> </p>
+  <p id="universalLink2"><b>Universal Link with Query params:</b> </p>
+  <p><a href="liff/path/?param=9">Link to Path</a></p>
 
-      <h4 class="mb-4">ระบบบันทึก HN ผู้ป่วย</h4>
-      
-      <button class="btn-scan mb-3" onclick="scanCode()">
-        📷 สแกน QR / Barcode
-      </button>
-
-      <div class="status-box text-start">
-        <p><span class="data-label">สถานะล็อกอิน:</span> <span id="isLoggedIn">Checking...</span></p>
-        <p><span class="data-label">เลข HN ล่าสุด:</span> <span id="scanCodeDisplay" class="text-primary">-</span></p>
-      </div>
-
-      <button class="btn btn-outline-secondary mt-3" onclick="closed()">ปิดหน้าต่าง</button>
-    </div>
-  </div>
+  <!-- ✅ เหลือแค่ 2 ปุ่ม -->
+  <button id="btnScanCode" onclick="scanCode()">Scan Code</button>
+  <button id="btnClose" onclick="closed()">Close</button>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <script>
-    // 1. ระบุข้อมูลสำคัญตรงนี้
-    const LIFF_ID = "2009684330-hseYstha"; 
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwOOaQuEgJnZ6m35cp48_ApJgyv_46-o3nYW-FR4hZUzABbyvrYyzDi4Eog-8iwOp7S/exec"; 
+    function createUniversalLink() {}
+    async function shareMsg() {}
+    function logOut() {}
 
-    async function main() {
-      try {
-        await liff.init({ liffId: LIFF_ID });
-        if (liff.isLoggedIn()) {
-          document.getElementById("isLoggedIn").innerText = "Logged In";
-          getUserProfile();
-        } else {
-          liff.login();
-        }
-      } catch (err) {
-        console.error("LIFF Initialization failed", err);
-      }
-    }
-
-    async function getUserProfile() {
-      const profile = await liff.getProfile();
-      document.getElementById("userInfo").style.display = "block";
-      document.getElementById("pictureUrl").src = profile.pictureUrl;
-      document.getElementById("displayName").innerText = profile.displayName;
+    function closed() {
+      liff.closeWindow()
     }
 
     async function scanCode() {
-      // ตรวจสอบว่าเปิดใน LINE Client หรือไม่ (คอมพิวเตอร์สแกนไม่ได้)
+      alert("start scan")
+
+      console.log("isInClient:", liff.isInClient())
+
+      try {
+        const result = await liff.scanCode()
+        document.getElementById("scanCode").innerText = "Code: " + result.value
+        alert("RESULT: " + result.value)
+      } catch (err) {
+        alert("ERROR: " + err.message)
+        console.error(err)
+      }
+    }
+
+    function openWindow() {
+      liff.openWindow({
+        url: "https://line.me",
+        external: true
+      })
+    }
+
+    async function getFriendship() {}
+
+    async function sendMsg() {
       if (!liff.isInClient()) {
-        alert("กรุณาใช้งานบนมือถือผ่านแอป LINE เท่านั้น");
-        return;
+        alert("NOT in LINE")
+        return
+      }
+
+      const context = liff.getContext()
+      if (!context || context.type === "none") {
+        alert("No chat context")
+        return
       }
 
       try {
-        const result = await liff.scanCode();
-        const hnValue = result.value;
-
-        if (hnValue) {
-          document.getElementById("scanCodeDisplay").innerText = hnValue;
-          
-          // ส่งข้อมูลไปยัง Google Sheets
-          sendDataToSheet(hnValue);
-        }
+        await liff.sendMessages([
+          {
+            "type": "sticker",
+            "stickerId": 1,
+            "packageId": 1
+          }
+        ])
+        alert("✅ sent success")
       } catch (err) {
-        if (err.message !== "User cancelled the scan.") {
-          alert("Error: " + err.message);
-        }
+        alert("❌ ERROR: " + err.message)
+        console.error(err)
       }
     }
 
-    async function sendDataToSheet(hn) {
-      try {
-        // แสดง Loading แจ้งเตือน
-        document.getElementById("scanCodeDisplay").innerText = "กำลังบันทึก...";
-        
-        const response = await fetch(WEB_APP_URL, {
-          method: "POST",
-          mode: "no-cors", // ใช้ no-cors เพื่อป้องกันปัญหา CORS เบื้องต้นกับ GAS
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            hnNumber: hn
-          }),
-        });
+    function getContext() {
+      document.getElementById("type").append(liff.getContext().type)
+      document.getElementById("viewType").append(liff.getContext().viewType)
+      document.getElementById("utouId").append(liff.getContext().utouId)
+      document.getElementById("roomId").append(liff.getContext().roomId)
+      document.getElementById("groupId").append(liff.getContext().groupId)
+    }
 
-        // เนื่องจากการใช้ no-cors จะอ่าน response ไม่ได้ 
-        // จึงสมมติว่าสำเร็จถ้าไม่มี Error พ่นออกมา
-        alert("✅ บันทึกเลข HN: " + hn + " ลงในตารางเรียบร้อยแล้ว");
-        document.getElementById("scanCodeDisplay").innerText = hn;
+    async function getUserProfile() {
+      const profile = await liff.getProfile()
+      document.getElementById("pictureUrl").src = profile.pictureUrl
+      document.getElementById("userId").append(profile.userId)
+      document.getElementById("statusMessage").append(profile.statusMessage)
+      document.getElementById("displayName").append(profile.displayName)
+      document.getElementById("decodedIDToken").append(liff.getDecodedIDToken().email)
+    }
 
-      } catch (err) {
-        alert("❌ บันทึกล้มเหลว: " + err.message);
-        document.getElementById("scanCodeDisplay").innerText = "Error";
+    function getEnvironment() {
+      document.getElementById("os").append(liff.getOS())
+      document.getElementById("language").append(liff.getLanguage())
+      document.getElementById("version").append(liff.getVersion())
+      document.getElementById("accessToken").append(liff.getAccessToken())
+      document.getElementById("isInClient").append(liff.isInClient())
+    }
+
+    async function main() {
+      await liff.init({ liffId: "2009684330-hseYstha" })
+
+      document.getElementById("isLoggedIn").append(liff.isLoggedIn())
+
+      if (liff.isLoggedIn()) {
+        getEnvironment()
+        await getUserProfile()
+        getContext()
       }
     }
 
-    function closed() {
-      liff.closeWindow();
-    }
-
-    main();
+    main()
   </script>
+
 </body>
 </html>
