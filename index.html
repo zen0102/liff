@@ -140,38 +140,61 @@
       }
     }
 
-    async function confirmSave() {
-      const isUpdate = document.getElementById("foundSection").style.display === "block";
-      const bDate = isUpdate ? document.getElementById("editBirthDate").value : document.getElementById("newBirthDate").value;
+ // --- ส่วนที่ปรับปรุงในฟังก์ชัน confirmSave() ---
 
-      if (!bDate) { alert("กรุณาระบุวันเวลาเกิด"); return; }
-      
-      const confirmText = isUpdate ? "ยืนยันการแก้ไขข้อมูล?" : "ยืนยันการเพิ่มข้อมูลใหม่?";
-      if (!confirm(confirmText)) return;
+async function confirmSave() {
+  const isUpdate = document.getElementById("foundSection").style.display === "block";
+  const bDateInput = isUpdate ? document.getElementById("editBirthDate").value : document.getElementById("newBirthDate").value;
 
-      try {
-        document.getElementById("loadingStatus").innerText = "⏳ กำลังบันทึก...";
-        document.getElementById("loadingStatus").style.display = "block";
+  if (!bDateInput) { 
+    alert("⚠️ กรุณาระบุวันเวลาเกิดก่อนบันทึก"); 
+    return; 
+  }
 
-        const response = await fetch(WEB_APP_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            action: "save",
-            hnNumber: currentHn,
-            birthDate: bDate
-          })
-        });
-        const res = await response.json();
+  // เตรียมข้อความยืนยัน
+  let confirmText = "";
+  
+  if (isUpdate) {
+    // ดึงค่าเดิมจากข้อมูลที่ Search เจอ (คอลัมน์ G คือ "วันเวลาเกิด")
+    // หมายเหตุ: ชื่อ Key ต้องตรงกับหัว Column ใน Google Sheet ของคุณ
+    const oldDate = document.getElementById("patientDetails").innerText.match(/วันเวลาเกิด:\s*(.*)/);
+    const displayOldDate = oldDate ? oldDate[1] : "ไม่ระบุ";
+    
+    // แปลงค่าจาก Input เป็น Format อ่านง่าย (dd/MM/yyyy HH:mm)
+    const dateObj = new Date(bDateInput);
+    const displayNewDate = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
 
-        if (res.status === "success") {
-          alert("✅ " + res.message);
-          location.reload(); 
-        }
-      } catch (e) {
-        alert("บันทึกไม่สำเร็จ");
-        document.getElementById("loadingStatus").style.display = "none";
-      }
+    confirmText = `❓ ยืนยันการแก้ไขข้อมูล\n------------------------\nค่าเดิม: ${displayOldDate}\nค่าใหม่: ${displayNewDate}\n------------------------`;
+  } else {
+    confirmText = "❓ ยืนยันการเพิ่มข้อมูลคนไข้ใหม่ลงในระบบ?";
+  }
+
+  if (!confirm(confirmText)) return;
+
+  // ส่วนการ Fetch ข้อมูล (คงเดิม)
+  try {
+    document.getElementById("loadingStatus").innerText = "⏳ กำลังบันทึก...";
+    document.getElementById("loadingStatus").style.display = "block";
+
+    const response = await fetch(WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "save",
+        hnNumber: currentHn,
+        birthDate: bDateInput
+      })
+    });
+    const res = await response.json();
+
+    if (res.status === "success") {
+      alert("✅ " + res.message);
+      location.reload(); 
     }
+  } catch (e) {
+    alert("❌ บันทึกไม่สำเร็จ");
+    document.getElementById("loadingStatus").style.display = "none";
+  }
+}
 
     main();
   </script>
