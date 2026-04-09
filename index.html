@@ -8,17 +8,12 @@
   <style>
     body { background-color: #f0f2f5; padding: 20px; font-family: sans-serif; }
     .card { border: none; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
-    
-    /* UI เดิมที่พยายามรักษาไว้ */
-    .profile-section { background: linear-gradient(135deg, #00b900 0%, #009900 100%); padding: 30px 20px; color: white; text-center; }
+    .profile-section { background: linear-gradient(135deg, #00b900 0%, #009900 100%); padding: 30px 20px; color: white; text-align: center; }
     #pictureUrl { width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); margin-bottom: 10px; }
     .uid-badge { background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-family: monospace; display: inline-block; }
-    
     .btn-scan { background-color: #00b900; color: white; font-weight: bold; padding: 18px; border-radius: 12px; width: 100%; border: none; font-size: 1.2rem; }
-    
-    /* ส่วนฟอร์มที่เพิ่มเข้ามาใหม่ */
     .status-box { background: #ffffff; padding: 20px; border-radius: 15px; margin-top: 20px; border: 1px solid #e0e0e0; text-align: left; }
-    .form-area { display: none; margin-top: 15px; border-top: 2px dashed #eee; padding-top: 15px; text-align: left; }
+    .form-area { display: none; margin-top: 15px; border-top: 2px dashed #eee; padding-top: 15px; }
     .data-row { display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #f9f9f9; padding: 4px 0; }
     .data-label { color: #777; font-weight: bold; }
     .hn-highlight { color: #00b900; font-weight: 800; font-size: 1.3rem; }
@@ -38,12 +33,12 @@
 
       <div class="card-body p-4">
         <button id="btnScan" class="btn-scan mb-2" onclick="scanCode()">📷 สแกนรหัส HN</button>
-        <div id="loadingStatus" class="loading-overlay">⏳ กำลังตรวจสอบข้อมูล...</div>
+        <div id="loadingStatus" class="loading-overlay">⏳ กำลังดำเนินการ...</div>
 
         <div class="status-box">
           <div id="defaultStatus">
             <span class="data-label">สถานะ:</span> 
-            <span id="isLoggedIn" class="text-muted">Checking...</span>
+            <span id="isLoggedIn" class="text-muted">ตรวจสอบระบบ...</span>
           </div>
 
           <div id="resultArea" style="display:none;">
@@ -51,18 +46,18 @@
             <div id="scanCodeDisplay" class="hn-highlight mb-2">-</div>
 
             <div id="foundSection" class="form-area">
-              <p class="text-success fw-bold">✅ พบข้อมูลเดิมในระบบ:</p>
+              <p class="text-success fw-bold">✅ ข้อมูลปัจจุบันใน Sheet:</p>
               <div id="patientDetails" class="mb-3"></div>
-              <label class="form-label fw-bold">ระบุวันเวลาเกิดใหม่ (เพื่อแก้ไข):</label>
+              <label class="form-label fw-bold text-dark">แก้ไขวันเวลาเกิด:</label>
               <input type="datetime-local" id="editBirthDate" class="form-control mb-3 border-success">
-              <button class="btn btn-success w-100 py-2" onclick="confirmSave('save')">ยืนยันการแก้ไขข้อมูล</button>
+              <button class="btn btn-success w-100 py-2" onclick="confirmSave()">ยืนยันการแก้ไข</button>
             </div> 
 
             <div id="notFoundSection" class="form-area">
               <p class="text-primary fw-bold">🆕 ไม่พบข้อมูล - ลงทะเบียนใหม่:</p>
               <label class="form-label fw-bold">ระบุวันเวลาเกิด:</label>
               <input type="datetime-local" id="newBirthDate" class="form-control mb-3 border-primary">
-              <button class="btn btn-primary w-100 py-2" onclick="confirmSave('save')">ยืนยันบันทึกคนไข้ใหม่</button>
+              <button class="btn btn-primary w-100 py-2" onclick="confirmSave()">บันทึกข้อมูลใหม่</button>
             </div>
           </div>
         </div>
@@ -74,8 +69,7 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    // --- แก้ไข URL ตรงนี้ ---
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw2oJsqvUkB-Yui2AfsdYztc0vnjvWx4ANzoM5qP0zeVDA5rbUccVWCVHUeNbAi7won/exec"; 
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxwmvp72v64YWZ384b-5DIuK5i2ww0z_TX-AefEJRra-PR00gGTcbi2CVHw6jNNAUgr/exec"; 
     let currentHn = "";
 
     async function main() {
@@ -99,7 +93,7 @@
     }
 
     async function scanCode() {
-      if (!liff.isInClient()) { alert("เปิดใน LINE บนมือถือเท่านั้น"); return; }
+      if (!liff.isInClient()) { alert("โปรดใช้งานผ่านแอป LINE"); return; }
       try {
         const result = await liff.scanCode();
         if (result.value) {
@@ -110,11 +104,9 @@
     }
 
     async function handleSearch(hn) {
-      // เตรียม UI
+      document.getElementById("loadingStatus").innerText = "⏳ กำลังค้นหา...";
       document.getElementById("loadingStatus").style.display = "block";
       document.getElementById("resultArea").style.display = "none";
-      document.getElementById("foundSection").style.display = "none";
-      document.getElementById("notFoundSection").style.display = "none";
 
       try {
         const response = await fetch(WEB_APP_URL, {
@@ -129,33 +121,36 @@
 
         if (res.status === "found") {
           document.getElementById("foundSection").style.display = "block";
+          document.getElementById("notFoundSection").style.display = "none";
           let html = "";
-          // แสดงข้อมูลคอลัมน์ต่างๆ ให้ดู
+          // แสดงข้อมูลดิบ (String) ที่ส่งมาจาก DisplayValues ของ Sheet ตรงๆ
           for (let key in res.data) {
-            if (res.data[key]) html += `<div class="data-row"><span class="data-label">${key}:</span> <span>${res.data[key]}</span></div>`;
+            if (res.data[key]) {
+              html += `<div class="data-row"><span class="data-label">${key}:</span> <span>${res.data[key]}</span></div>`;
+            }
           }
           document.getElementById("patientDetails").innerHTML = html;
         } else {
           document.getElementById("notFoundSection").style.display = "block";
+          document.getElementById("foundSection").style.display = "none";
         }
       } catch (e) {
-        alert("การเชื่อมต่อล้มเหลว");
+        alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
         document.getElementById("loadingStatus").style.display = "none";
       }
     }
 
     async function confirmSave() {
-      // เช็คว่าต้องดึงค่าจากช่องไหน
       const isUpdate = document.getElementById("foundSection").style.display === "block";
       const bDate = isUpdate ? document.getElementById("editBirthDate").value : document.getElementById("newBirthDate").value;
 
-      if (!bDate) { alert("กรุณาระบุวันเวลาเกิดก่อนบันทึก"); return; }
+      if (!bDate) { alert("กรุณาระบุวันเวลาเกิด"); return; }
       
-      const confirmText = isUpdate ? "ยืนยันการแก้ไขวันเวลาเกิด?" : "ยืนยันการเพิ่มข้อมูลคนไข้ใหม่?";
+      const confirmText = isUpdate ? "ยืนยันการแก้ไขข้อมูล?" : "ยืนยันการเพิ่มข้อมูลใหม่?";
       if (!confirm(confirmText)) return;
 
       try {
-        document.getElementById("loadingStatus").innerText = "⏳ กำลังบันทึกข้อมูล...";
+        document.getElementById("loadingStatus").innerText = "⏳ กำลังบันทึก...";
         document.getElementById("loadingStatus").style.display = "block";
 
         const response = await fetch(WEB_APP_URL, {
@@ -170,10 +165,10 @@
 
         if (res.status === "success") {
           alert("✅ " + res.message);
-          location.reload(); // สำเร็จแล้วรีโหลดแอป
+          location.reload(); 
         }
       } catch (e) {
-        alert("เกิดข้อผิดพลาดในการบันทึก");
+        alert("บันทึกไม่สำเร็จ");
         document.getElementById("loadingStatus").style.display = "none";
       }
     }
