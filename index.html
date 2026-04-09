@@ -2,182 +2,128 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Patient Registration</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <style>
-    body { background-color: #f0f2f5; padding: 20px; font-family: sans-serif; }
-    .card { border: none; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
-    .profile-section { background: linear-gradient(135deg, #00b900 0%, #009900 100%); padding: 30px 20px; color: white; text-align: center; }
-    #pictureUrl { width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); margin-bottom: 10px; }
-    .uid-badge { background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-family: monospace; display: inline-block; }
-    .btn-scan { background-color: #00b900; color: white; font-weight: bold; padding: 18px; border-radius: 12px; width: 100%; border: none; font-size: 1.2rem; }
-    .status-box { background: #ffffff; padding: 20px; border-radius: 15px; margin-top: 20px; border: 1px solid #e0e0e0; text-align: left; }
-    .form-area { display: none; margin-top: 15px; border-top: 2px dashed #eee; padding-top: 15px; }
-    .data-row { display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #f9f9f9; padding: 4px 0; }
-    .data-label { color: #777; font-weight: bold; }
-    .hn-highlight { color: #00b900; font-weight: 800; font-size: 1.3rem; }
-    .loading-overlay { display: none; color: #00b900; font-weight: bold; margin: 10px 0; }
-  </style>
 </head>
 
 <body>
-  <div class="container" style="max-width: 450px;">
-    <div class="card text-center">
-      <div id="userInfo" class="profile-section" style="display:none;">
-        <img id="pictureUrl" src="" alt="Profile">
-        <h4 id="displayName" class="mb-1"></h4>
-        <div class="uid-badge">UID: <span id="userIdDisplay">...</span></div>
-      </div>
+<div class="container" style="max-width:450px;">
 
-      <div class="card-body p-4">
-        <button id="btnScan" class="btn-scan mb-2" onclick="scanCode()">📷 สแกนรหัส HN</button>
-        <div id="loadingStatus" class="loading-overlay">⏳ กำลังดำเนินการ...</div>
+  <button id="btnScan" class="btn btn-success w-100 py-3 mt-3">
+    📷 สแกนรหัส HN
+  </button>
 
-        <div class="status-box">
-          <div id="defaultStatus">
-            <span class="data-label">สถานะ:</span> 
-            <span id="isLoggedIn" class="text-muted">ตรวจสอบระบบ...</span>
-          </div>
-
-          <div id="resultArea" style="display:none;">
-            <span class="data-label">เลข HN ที่สแกน:</span>
-            <div id="scanCodeDisplay" class="hn-highlight mb-2">-</div>
-
-            <div id="foundSection" class="form-area">
-              <p class="text-success fw-bold">✅ ข้อมูลเดิมที่พบ:</p>
-              <div id="patientDetails" class="mb-3"></div>
-              <label class="form-label fw-bold">ระบุวันเวลาเกิดใหม่:</label>
-              <input type="datetime-local" id="editBirthDate" class="form-control mb-3 border-success">
-              <button class="btn btn-success w-100 py-2" onclick="confirmSave()">ยืนยันการแก้ไข</button>
-            </div> 
-
-            <div id="notFoundSection" class="form-area">
-              <p class="text-primary fw-bold">🆕 ไม่พบข้อมูล - ลงทะเบียนใหม่:</p>
-              <label class="form-label fw-bold">ระบุวันเวลาเกิด:</label>
-              <input type="datetime-local" id="newBirthDate" class="form-control mb-3 border-primary">
-              <button class="btn btn-primary w-100 py-2" onclick="confirmSave()">บันทึกข้อมูลใหม่</button>
-            </div>
-          </div>
-        </div>
-        <button class="btn btn-link btn-sm mt-3 text-muted text-decoration-none" onclick="liff.closeWindow()">ปิดหน้าต่าง</button>
-      </div>
-    </div>
+  <div id="loadingStatus" style="display:none;" class="text-success mt-2">
+    ⏳ กำลังดำเนินการ...
   </div>
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzES5lpNeH2zQy5SZHOeh8ART4dDa0iqxFUhbpWbVnzGYblLKmiOvNDCc0eHUJCMSqN/exec"; 
-    let currentHn = "";
-    let originalPatientData = null;
+  <div id="resultArea" style="display:none;">
+    <h5>HN: <span id="scanCodeDisplay"></span></h5>
+    <div id="patientDetails"></div>
+  </div>
 
-    async function main() {
-      try {
-        await liff.init({ liffId: "2009684330-hseYstha" });
-        if (liff.isLoggedIn()) {
-          document.getElementById("isLoggedIn").innerText = "พร้อมสแกน";
-          getUserProfile();
-        } else { liff.login(); }
-      } catch (err) { console.error(err); }
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzES5lpNeH2zQy5SZHOeh8ART4dDa0iqxFUhbpWbVnzGYblLKmiOvNDCc0eHUJCMSqN/exec";
+
+let currentHn = "";
+let isScanning = false;
+let isLiffReady = false;
+
+// ================= INIT =================
+async function main() {
+  try {
+    await liff.init({ liffId: "2009684330-hseYstha" });
+    await liff.ready;
+
+    isLiffReady = true;
+    console.log("LIFF READY");
+
+  } catch (err) {
+    console.error("LIFF ERROR:", err);
+  }
+}
+
+// ================= SCAN BUTTON (FIX สำคัญ) =================
+document.getElementById("btnScan").addEventListener("click", async () => {
+
+  if (!isLiffReady) {
+    alert("ระบบยังไม่พร้อม");
+    return;
+  }
+
+  if (!liff.isInClient()) {
+    alert("โปรดเปิดผ่าน LINE");
+    return;
+  }
+
+  if (isScanning) return; // กันกดรัว
+
+  isScanning = true;
+  document.getElementById("loadingStatus").style.display = "block";
+
+  try {
+    console.log("START SCAN");
+
+    const result = await liff.scanCode({ scanType: "qr" });
+
+    console.log("SCAN RESULT:", result);
+
+    if (!result || !result.value) {
+      alert("สแกนไม่สำเร็จ");
+      return;
     }
 
-    async function getUserProfile() {
-      const profile = await liff.getProfile();
-      document.getElementById("userInfo").style.display = "block";
-      document.getElementById("pictureUrl").src = profile.pictureUrl;
-      document.getElementById("displayName").innerText = profile.displayName;
-      document.getElementById("userIdDisplay").innerText = profile.userId;
+    currentHn = result.value;
+    document.getElementById("scanCodeDisplay").innerText = currentHn;
+
+    await handleSearch(currentHn);
+
+  } catch (err) {
+    console.error("SCAN ERROR:", err);
+    alert("สแกนล้มเหลว");
+  } finally {
+    isScanning = false;
+    document.getElementById("loadingStatus").style.display = "none";
+  }
+
+});
+
+// ================= SEARCH =================
+async function handleSearch(hn) {
+  try {
+    const response = await fetch(WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "search",
+        hnNumber: hn
+      })
+    });
+
+    const res = await response.json();
+
+    document.getElementById("resultArea").style.display = "block";
+
+    if (res.status === "found") {
+      let html = "<div class='text-success'>พบข้อมูล</div>";
+      document.getElementById("patientDetails").innerHTML = html;
+    } else {
+      document.getElementById("patientDetails").innerHTML =
+        "<div class='text-primary'>ไม่พบข้อมูล</div>";
     }
 
-    async function scanCode() {
-      if (!liff.isInClient()) { alert("โปรดใช้งานผ่านแอป LINE"); return; }
-      try {
-        const result = await liff.scanCodeV2();
-        if (result.value) {
-          currentHn = result.value;
-          handleSearch(result.value);
-        }
-      } catch (err) { console.error(err); }
-    }
+  } catch (e) {
+    alert("เชื่อมต่อไม่ได้");
+  }
+}
 
-    async function handleSearch(hn) {
-      document.getElementById("loadingStatus").style.display = "block";
-      document.getElementById("resultArea").style.display = "none";
-      try {
-        const response = await fetch(WEB_APP_URL, {
-          method: "POST",
-          body: JSON.stringify({ action: "search", hnNumber: hn })
-        });
-        const res = await response.json();
-        document.getElementById("loadingStatus").style.display = "none";
-        document.getElementById("resultArea").style.display = "block";
-        document.getElementById("scanCodeDisplay").innerText = hn;
+// ================= START =================
+main();
 
-        if (res.status === "found") {
-          originalPatientData = res.data; // เก็บข้อมูลลงตัวแปร Global
-          document.getElementById("foundSection").style.display = "block";
-          document.getElementById("notFoundSection").style.display = "none";
-          let html = "";
-          for (let key in res.data) {
-            if (res.data[key]) html += `<div class="data-row"><span class="data-label">${key}:</span> <span>${res.data[key]}</span></div>`;
-          }
-          document.getElementById("patientDetails").innerHTML = html;
-        } else {
-          originalPatientData = null;
-          document.getElementById("notFoundSection").style.display = "block";
-          document.getElementById("foundSection").style.display = "none";
-        }
-      } catch (e) {
-        alert("การเชื่อมต่อล้มเหลว");
-        document.getElementById("loadingStatus").style.display = "none";
-      }
-    }
-
-    async function confirmSave() {
-      const isUpdate = document.getElementById("foundSection").style.display === "block";
-      const bDateVal = isUpdate ? document.getElementById("editBirthDate").value : document.getElementById("newBirthDate").value;
-
-      if (!bDateVal) { alert("กรุณาระบุวันเวลาเกิด"); return; }
-
-      let confirmText = "";
-      if (isUpdate && originalPatientData) {
-        // ดึงค่าจากหัวตาราง Column G (ระบุให้ตรงกับชื่อหัวตารางใน Sheet)
-        const oldVal = originalPatientData["วันเวลาเกิด"] || "ว่าง";
-        
-        // แปลงค่าใหม่เป็น format อ่านง่าย
-        const d = new Date(bDateVal);
-        const newVal = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        
-        confirmText = `❓ ยืนยันการแก้ไขข้อมูล\n------------------------\nค่าเดิม: ${oldVal}\nค่าใหม่: ${newVal}\n------------------------`;
-      } else {
-        confirmText = "❓ ยืนยันบันทึกข้อมูลใหม่?";
-      }
-
-      if (confirm(confirmText)) {
-        saveData(bDateVal);
-      }
-    }
-
-    async function saveData(bDate) {
-      document.getElementById("loadingStatus").innerText = "⏳ กำลังบันทึก...";
-      document.getElementById("loadingStatus").style.display = "block";
-      try {
-        const response = await fetch(WEB_APP_URL, {
-          method: "POST",
-          body: JSON.stringify({ action: "save", hnNumber: currentHn, birthDate: bDate })
-        });
-        const res = await response.json();
-        if (res.status === "success") {
-          alert("✅ " + res.message);
-          location.reload();
-        }
-      } catch (e) {
-        alert("บันทึกไม่สำเร็จ");
-        document.getElementById("loadingStatus").style.display = "none";
-      }
-    }
-
-    main();
-  </script>
+</script>
 </body>
 </html>
