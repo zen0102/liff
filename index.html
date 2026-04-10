@@ -3,20 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover">
-  <title>Patient Registration</title>
+  <title>Patient Registration System</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <style>
-    body { background-color: #f0f2f5; padding: 20px; font-family: sans-serif; }
+    body { background-color: #f0f2f5; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     .card { border: none; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
     .profile-section { background: linear-gradient(135deg, #00b900 0%, #009900 100%); padding: 30px 20px; color: white; text-align: center; }
-    #pictureUrl { width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); margin-bottom: 10px; }
-    .uid-badge { background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-family: monospace; display: inline-block; }
-    .btn-scan { background-color: #00b900; color: white; font-weight: bold; padding: 18px; border-radius: 12px; width: 100%; border: none; font-size: 1.2rem; }
+    #pictureUrl { width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); margin-bottom: 10px; object-fit: cover; }
+    .uid-badge { background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-family: monospace; }
+    .btn-scan { background-color: #00b900; color: white; font-weight: bold; padding: 18px; border-radius: 12px; width: 100%; border: none; font-size: 1.2rem; transition: 0.3s; }
+    .btn-scan:active { background-color: #008800; transform: scale(0.98); }
     .status-box { background: #ffffff; padding: 20px; border-radius: 15px; margin-top: 20px; border: 1px solid #e0e0e0; text-align: left; }
     .form-area { display: none; margin-top: 15px; border-top: 2px dashed #eee; padding-top: 15px; }
-    .data-row { display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #f9f9f9; padding: 4px 0; }
+    .data-row { display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #f9f9f9; padding: 6px 0; }
     .data-label { color: #777; font-weight: bold; }
-    .hn-highlight { color: #00b900; font-weight: 800; font-size: 1.3rem; }
+    .hn-highlight { color: #00b900; font-weight: 800; font-size: 1.5rem; letter-spacing: 1px; }
     .loading-overlay { display: none; color: #00b900; font-weight: bold; margin: 10px 0; }
   </style>
 </head>
@@ -27,7 +28,7 @@
       <div id="userInfo" class="profile-section" style="display:none;">
         <img id="pictureUrl" src="" alt="Profile">
         <h4 id="displayName" class="mb-1"></h4>
-        <div class="uid-badge">UID: <span id="userIdDisplay">...</span></div>
+        <div class="uid-badge">Staff: <span id="userIdDisplay">...</span></div>
       </div>
 
       <div class="card-body p-4">
@@ -36,25 +37,25 @@
 
         <div class="status-box">
           <div id="defaultStatus">
-            <span class="data-label">สถานะ:</span> 
-            <span id="isLoggedIn" class="text-muted">ตรวจสอบระบบ...</span>
+            <span class="data-label">สถานะระบบ:</span> 
+            <span id="isLoggedIn" class="text-muted">กำลังตรวจสอบ...</span>
           </div>
 
           <div id="resultArea" style="display:none;">
-            <span class="data-label">เลข HN ที่สแกน:</span>
+            <span class="data-label">เลข HN ที่พบ:</span>
             <div id="scanCodeDisplay" class="hn-highlight mb-2">-</div>
 
             <div id="foundSection" class="form-area">
-              <p class="text-success fw-bold">✅ ข้อมูลเดิมที่พบ:</p>
+              <p class="text-success fw-bold">✅ พบข้อมูลคนไข้เดิม:</p>
               <div id="patientDetails" class="mb-3"></div>
-              <label class="form-label fw-bold">ระบุวันเวลาเกิดใหม่:</label>
+              <label class="form-label fw-bold">แก้ไขวัน/เวลาเกิด:</label>
               <input type="datetime-local" id="editBirthDate" class="form-control mb-3 border-success">
-              <button class="btn btn-success w-100 py-2" onclick="confirmSave()">ยืนยันการแก้ไข</button>
+              <button class="btn btn-success w-100 py-2" onclick="confirmSave()">บันทึกการแก้ไข</button>
             </div> 
 
             <div id="notFoundSection" class="form-area">
               <p class="text-primary fw-bold">🆕 ไม่พบข้อมูล - ลงทะเบียนใหม่:</p>
-              <label class="form-label fw-bold">ระบุวันเวลาเกิด:</label>
+              <label class="form-label fw-bold">ระบุวัน/เวลาเกิด:</label>
               <input type="datetime-local" id="newBirthDate" class="form-control mb-3 border-primary">
               <button class="btn btn-primary w-100 py-2" onclick="confirmSave()">บันทึกข้อมูลใหม่</button>
             </div>
@@ -67,22 +68,29 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    // ** ตรวจสอบ URL นี้ให้เป็นตัวล่าสุดจากการ Deploy **
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzWKMJ697xK1bWm1GluzGd6RDA0jpC7Zlvjb2UdR9lrtJpgT8QzqM_sSmnR9ucjEY4h/exec"; 
+    // ** แก้ไข URL ตรงนี้ **
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby5TOsojvKINRvEalLnuIbJgKoIKkn39NCxGLbrqa6WfMtvF2I80qNgWxk9xmW7newd/exec"; 
     let currentHn = "";
     let hnFormat = ""; 
     let originalPatientData = null;
 
     async function main() {
       try {
-        await liff.init({ liffId: "2009684330-hseYstha" });
-        if (liff.isLoggedIn()) {
-          document.getElementById("isLoggedIn").innerText = "เตรียมระบบ...";
+        await liff.init({ liffId: "YOUR_LIFF_ID_HERE" });
+        if (liff.isLoggedIn()) { 
+          document.getElementById("isLoggedIn").innerText = "พร้อมสแกน";
           await getUserProfile();
           await fetchFormat(); 
-          document.getElementById("isLoggedIn").innerText = "พร้อมสแกน";
         } else { liff.login(); }
       } catch (err) { console.error(err); }
+    }
+
+    async function getUserProfile() {
+      const profile = await liff.getProfile();
+      document.getElementById("userInfo").style.display = "block";
+      document.getElementById("pictureUrl").src = profile.pictureUrl;
+      document.getElementById("displayName").innerText = profile.displayName;
+      document.getElementById("userIdDisplay").innerText = profile.userId;
     }
 
     async function fetchFormat() {
@@ -100,7 +108,6 @@
       if (!hnFormat) return true;
       const val = hn.trim().toUpperCase();
       if (val.length !== hnFormat.length) return false;
-
       for (let i = 0; i < hnFormat.length; i++) {
         const char = val[i];
         const rule = hnFormat[i];
@@ -111,22 +118,14 @@
       return true;
     }
 
-    async function getUserProfile() {
-      const profile = await liff.getProfile();
-      document.getElementById("userInfo").style.display = "block";
-      document.getElementById("pictureUrl").src = profile.pictureUrl;
-      document.getElementById("displayName").innerText = profile.displayName;
-      document.getElementById("userIdDisplay").innerText = profile.userId;
-    }
-
     async function scanCode() {
-      if (!liff.isInClient()) { alert("โปรดใช้ผ่านแอป LINE"); return; }
+      if (!liff.isInClient()) { alert("กรุณาเปิดผ่านแอป LINE บนมือถือ"); return; }
       try {
-        const result = await liff.scanCode();
+        const result = await liff.scanCodeV2();
         if (result.value) {
           const rawHn = result.value.trim();
           if (!isValidHn(rawHn)) {
-            alert(`❌ รูปแบบ HN ไม่ถูกต้อง!\nกำหนด: ${hnFormat}\nพบ: ${rawHn}\n(N=เลข, C=อักษร, - / ตรงตัว)`);
+            alert(`❌ รูปแบบ HN ไม่ถูกต้อง!\nต้องการ: ${hnFormat}\nพบ: ${rawHn}`);
             return;
           }
           currentHn = rawHn.toUpperCase();
@@ -162,40 +161,50 @@
           document.getElementById("notFoundSection").style.display = "block";
           document.getElementById("foundSection").style.display = "none";
         }
-      } catch (e) { alert("เชื่อมต่อล้มเหลว"); document.getElementById("loadingStatus").style.display = "none"; }
+      } catch (e) { alert("เชื่อมต่อผิดพลาด"); document.getElementById("loadingStatus").style.display = "none"; }
     }
 
     async function confirmSave() {
       const isUpdate = document.getElementById("foundSection").style.display === "block";
       const bDateVal = document.getElementById(isUpdate ? "editBirthDate" : "newBirthDate").value;
-      if (!bDateVal) { alert("กรุณาระบุวันเวลาเกิด"); return; }
+      if (!bDateVal) { alert("กรุณาระบุวันเวลาเกิดก่อนบันทึก"); return; }
 
       const d = new Date(bDateVal);
       const formatted = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
-      let msg = "";
-      if (isUpdate && originalPatientData) {
-        const name = originalPatientData["ชื่อ"] || "";
-        const lname = originalPatientData["นามสกุล"] || "";
-        msg = `❓ ยืนยันแก้ไข\n📌 HN: ${currentHn}\n👤 ชื่อ: ${name} ${lname}\n❌ เดิม: ${originalPatientData["วันเวลาเกิด"] || "ว่าง"}\n✅ ใหม่: ${formatted}`;
-      } else {
-        msg = `❓ ยืนยันบันทึกใหม่\n📌 HN: ${currentHn}\n📅 วันเกิด: ${formatted}`;
-      }
+      let msg = isUpdate 
+        ? `❓ ยืนยันแก้ไขข้อมูล\n📌 HN: ${currentHn}\n👤 ชื่อ: ${originalPatientData["ชื่อ"] || ""} ${originalPatientData["นามสกุล"] || ""}\n✅ วันเกิดใหม่: ${formatted}`
+        : `❓ ยืนยันลงทะเบียนใหม่\n📌 HN: ${currentHn}\n📅 วันเกิด: ${formatted}`;
 
       if (confirm(msg)) saveData(bDateVal);
     }
 
     async function saveData(bDate) {
-      document.getElementById("loadingStatus").innerText = "⏳ กำลังบันทึก...";
+      document.getElementById("loadingStatus").innerText = "⏳ กำลังบันทึกประวัติ...";
       document.getElementById("loadingStatus").style.display = "block";
+      
       try {
+        const profile = await liff.getProfile();
+        const email = liff.getDecodedIDToken()?.email || "N/A";
+
         const response = await fetch(WEB_APP_URL, {
           method: "POST",
-          body: JSON.stringify({ action: "save", hnNumber: currentHn, birthDate: bDate })
+          body: JSON.stringify({ 
+            action: "save", 
+            hnNumber: currentHn, 
+            birthDate: bDate,
+            staffID: profile.userId,
+            displayName: profile.displayName,
+            email: email,
+            device: navigator.userAgent.indexOf("Line") > -1 ? "Line App" : "Browser"
+          })
         });
         const res = await response.json();
-        if (res.status === "success") { alert("✅ " + res.message); location.reload(); }
-      } catch (e) { alert("ล้มเหลว"); document.getElementById("loadingStatus").style.display = "none"; }
+        if (res.status === "success") { 
+          alert("✅ " + res.message); 
+          location.reload(); 
+        }
+      } catch (e) { alert("ล้มเหลว: " + e); document.getElementById("loadingStatus").style.display = "none"; }
     }
 
     main();
