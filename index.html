@@ -71,15 +71,33 @@
     let currentHn = "";
     let originalPatientData = null;
 
-    async function main() {
-      try {
-        await liff.init({ liffId: "2009684330-hseYstha" });
-        if (liff.isLoggedIn()) {
-          document.getElementById("isLoggedIn").innerText = "พร้อมสแกน";
-          getUserProfile();
-        } else { liff.login(); }
-      } catch (err) { console.error(err); }
+
+
+ //   async function main() {
+ //     try {
+ //       await liff.init({ liffId: "2009684330-hseYstha" });
+ //       if (liff.isLoggedIn()) {
+ //         document.getElementById("isLoggedIn").innerText = "พร้อมสแกน";
+ //         getUserProfile();
+ //       } else { liff.login(); }
+ //     } catch (err) { console.error(err); }
+ //   }
+
+ async function main() {
+      await liff.init({ liffId: "2009684330-hseYstha" })
+
+      document.getElementById("isLoggedIn").append(liff.isLoggedIn())
+
+      if (liff.isLoggedIn()) {
+        getEnvironment()
+        await getUserProfile()
+        getContext()
+      }
     }
+
+
+
+
 
     async function getUserProfile() {
       const profile = await liff.getProfile();
@@ -91,7 +109,7 @@
 
     async function scanCode() {
 
-      await liff.ready;
+      
       if (!liff.isInClient()) { alert("โปรดใช้งานผ่านแอป LINE"); return; }
       try {
         const result = await liff.scanCode();
