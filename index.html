@@ -178,6 +178,7 @@
       }
     }
 */
+/*
 async function confirmSave() {
       const isUpdate = document.getElementById("foundSection").style.display === "block";
       const bDateVal = document.getElementById(isUpdate ? "editBirthDate" : "newBirthDate").value;
@@ -220,6 +221,57 @@ async function confirmSave() {
         saveData(bDateVal);
       }
     }
+*/
+async function confirmSave() {
+      const isUpdate = document.getElementById("foundSection").style.display === "block";
+      const bDateVal = document.getElementById(isUpdate ? "editBirthDate" : "newBirthDate").value;
+
+      if (!bDateVal) { 
+        alert("กรุณาระบุวันเวลาเกิด"); 
+        return; 
+      }
+
+      // 1. จัดรูปแบบวันที่ใหม่ให้สวยงาม
+      const d = new Date(bDateVal);
+      const newValFormatted = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+      let confirmText = "";
+
+      if (isUpdate && originalPatientData) {
+        // 2. ดึงค่า HN
+        const hn = currentHn;
+
+        // 3. ดึงชื่อและนามสกุล (ปรับชื่อ Key ให้ตรงกับหัวตารางใน Google Sheets ของคุณ)
+        // สมมติว่าใน Sheet มีคอลัมน์ชื่อ "ชื่อ" และ "นามสกุล"
+        const fname = originalPatientData["ชื่อ"] || "";
+        const lname = originalPatientData["นามสกุล"] || "";
+        const fullName = (fname || lname) ? `${fname} ${lname}` : "ไม่พบข้อมูลชื่อ";
+
+        // 4. ค่าเดิมจากระบบ
+        const oldVal = originalPatientData["วันเวลาเกิด"] || "ว่าง";
+
+        confirmText = `❓ ยืนยันการแก้ไขข้อมูล\n` +
+                      `------------------------\n` +
+                      `📌 HN: ${hn}\n` +
+                      `👤 ชื่อ-สกุล: ${fullName.trim()}\n` +
+                      `------------------------\n` +
+                      `❌ ค่าเดิม: ${oldVal}\n` +
+                      `✅ ค่าใหม่: ${newValFormatted}\n` +
+                      `------------------------`;
+      } else {
+        // กรณีบันทึกใหม่
+        confirmText = `❓ ยืนยันบันทึกข้อมูลใหม่\n` +
+                      `------------------------\n` +
+                      `📌 HN: ${currentHn}\n` +
+                      `📅 วันเกิด: ${newValFormatted}\n` +
+                      `------------------------`;
+      }
+
+      if (confirm(confirmText)) {
+        saveData(bDateVal);
+      }
+    }
+
 
 
 
