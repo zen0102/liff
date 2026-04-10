@@ -68,7 +68,7 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     // ** ตรวจสอบ URL นี้ให้เป็นตัวล่าสุดจากการ Deploy **
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzzJQO9jvJ3F5LvJCv9NC5v8qjWUB2Zfuw48ESE4JXIKRypmzfZ2Xf73FzD-vn34z32/exec"; 
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxbnzFqYMjoWySQSZJ5Recjvx4Z_YyxjooX19fFlvveTUQkhLmZeTbATlpHcEyic289/exec"; 
     let currentHn = "";
     let hnFormat = ""; 
     let originalPatientData = null;
@@ -185,18 +185,43 @@
       if (confirm(msg)) saveData(bDateVal);
     }
 
-    async function saveData(bDate) {
-      document.getElementById("loadingStatus").innerText = "⏳ กำลังบันทึก...";
-      document.getElementById("loadingStatus").style.display = "block";
-      try {
-        const response = await fetch(WEB_APP_URL, {
-          method: "POST",
-          body: JSON.stringify({ action: "save", hnNumber: currentHn, birthDate: bDate })
-        });
-        const res = await response.json();
-        if (res.status === "success") { alert("✅ " + res.message); location.reload(); }
-      } catch (e) { alert("ล้มเหลว"); document.getElementById("loadingStatus").style.display = "none"; }
+<script>
+async function saveData(bDate) {
+  document.getElementById("loadingStatus").innerText = "⏳ กำลังบันทึก...";
+  document.getElementById("loadingStatus").style.display = "block";
+
+  try {
+    const profile = await liff.getProfile();
+    const idToken = liff.getDecodedIDToken();
+
+    const response = await fetch(WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "save",
+        hnNumber: currentHn,
+        birthDate: bDate,
+
+        // ✅ เพิ่มตรงนี้ (AuditLog ใช้)
+        userId: profile.userId,
+        displayName: profile.displayName,
+        email: idToken?.email || "",
+        device: navigator.userAgent
+      })
+    });
+
+    const res = await response.json();
+
+    if (res.status === "success") {
+      alert("✅ " + res.message);
+      location.reload();
     }
+
+  } catch (e) {
+    alert("ล้มเหลว");
+    document.getElementById("loadingStatus").style.display = "none";
+  }
+}
+</script>
 
     main();
   </script>
