@@ -73,16 +73,16 @@
 
 
 
- //   async function main() {
- //     try {
- //       await liff.init({ liffId: "2009684330-hseYstha" });
- //       if (liff.isLoggedIn()) {
- //         document.getElementById("isLoggedIn").innerText = "พร้อมสแกน";
- //         getUserProfile();
- //       } else { liff.login(); }
- //     } catch (err) { console.error(err); }
- //   }
-
+    async function main() {
+      try {
+        await liff.init({ liffId: "2009684330-hseYstha" });
+        if (liff.isLoggedIn()) {
+          document.getElementById("isLoggedIn").innerText = "พร้อมสแกน";
+          getUserProfile();
+        } else { liff.login(); }
+      } catch (err) { console.error(err); }
+    }
+/*
  async function main() {
       await liff.init({ liffId: "2009684330-hseYstha" })
 
@@ -94,7 +94,7 @@
         getContext()
       }
     }
-
+*/
 
 
 
