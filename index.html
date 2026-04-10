@@ -78,7 +78,7 @@
         await liff.init({ liffId: "2009684330-hseYstha" });
         if (liff.isLoggedIn()) {
           document.getElementById("isLoggedIn").innerText = "พร้อมสแกน";
-          getUserProfile();
+          await getUserProfile();
         } else { liff.login(); }
       } catch (err) { console.error(err); }
     }
