@@ -67,7 +67,7 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwbDWELFdY7V-yKmr_YuEWsodXc2l9CQQVxcUR7XfpWRozPvaMcy-LRdd_tg_9GyCYa/exec"; 
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyfIDs8p4gXb9ltfD7GQwWE0G4B5IC4GqwVp-U_4CmC5oInPlsLDxco6wQiu61uBoLb/exec"; 
     let currentHn = "";
     let originalPatientData = null;
 
@@ -121,37 +121,44 @@
     }
 
     async function handleSearch(hn) {
-      document.getElementById("loadingStatus").style.display = "block";
-      document.getElementById("resultArea").style.display = "none";
-      try {
-        const response = await fetch(WEB_APP_URL, {
-          method: "POST",
-          body: JSON.stringify({ action: "search", hnNumber: hn })
-        });
-        const res = await response.json();
-        document.getElementById("loadingStatus").style.display = "none";
-        document.getElementById("resultArea").style.display = "block";
-        document.getElementById("scanCodeDisplay").innerText = hn;
+  document.getElementById("loadingStatus").style.display = "block";
+  document.getElementById("resultArea").style.display = "none";
+  try {
+    const response = await fetch(WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "search", hnNumber: hn })
+    });
+    const res = await response.json();
+    document.getElementById("loadingStatus").style.display = "none";
 
-        if (res.status === "found") {
-          originalPatientData = res.data; // เก็บข้อมูลลงตัวแปร Global
-          document.getElementById("foundSection").style.display = "block";
-          document.getElementById("notFoundSection").style.display = "none";
-          let html = "";
-          for (let key in res.data) {
-            if (res.data[key]) html += `<div class="data-row"><span class="data-label">${key}:</span> <span>${res.data[key]}</span></div>`;
-          }
-          document.getElementById("patientDetails").innerHTML = html;
-        } else {
-          originalPatientData = null;
-          document.getElementById("notFoundSection").style.display = "block";
-          document.getElementById("foundSection").style.display = "none";
-        }
-      } catch (e) {
-        alert("การเชื่อมต่อล้มเหลว");
-        document.getElementById("loadingStatus").style.display = "none";
-      }
+    // ถ้า Server ตอบกลับว่า Format ไม่ถูกต้อง
+    if (res.status === "invalid_format") {
+      alert("⚠️ " + res.message);
+      return;
     }
+
+    document.getElementById("resultArea").style.display = "block";
+    document.getElementById("scanCodeDisplay").innerText = hn;
+
+    if (res.status === "found") {
+      originalPatientData = res.data;
+      document.getElementById("foundSection").style.display = "block";
+      document.getElementById("notFoundSection").style.display = "none";
+      let html = "";
+      for (let key in res.data) {
+        if (res.data[key]) html += `<div class="data-row"><span class="data-label">${key}:</span> <span>${res.data[key]}</span></div>`;
+      }
+      document.getElementById("patientDetails").innerHTML = html;
+    } else {
+      originalPatientData = null;
+      document.getElementById("notFoundSection").style.display = "block";
+      document.getElementById("foundSection").style.display = "none";
+    }
+  } catch (e) {
+    alert("การเชื่อมต่อล้มเหลว");
+    document.getElementById("loadingStatus").style.display = "none";
+  }
+}
 /*
     async function confirmSave() {
       const isUpdate = document.getElementById("foundSection").style.display === "block";
