@@ -259,7 +259,7 @@
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
-      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 15:25</div>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 16:05</div>
     </div>
   </div>
 </div>
@@ -911,10 +911,9 @@
       $("foundSection").style.display = "block";
       $("notFoundSection").style.display = "none";
 
-      const rows = [
-        ["ชื่อ-สกุล", (p.first + " " + p.last).trim() || "-"],
-        ["วันเวลาเกิด", { html: dobShowHtml(p) }]
-      ];
+      const rows = [["ชื่อ-สกุล", (p.first + " " + p.last).trim() || "-"]];
+      // คนที่แก้ได้ เห็นวันเวลาเกิดในกรอบ "เดิมในระบบ" อยู่แล้ว · คนที่ไม่มีสิทธิ์แก้ ไม่มีกรอบนั้น → แสดงที่นี่แทน
+      if (!r.canEdit) rows.push(["วันเวลาเกิด", { html: dobShowHtml(p) }]);
       $("patientDetails").innerHTML = rows.map(([k, v]) =>
         `<div class="data-row"><span class="data-label">${esc(k)}</span><span class="text-end">${v && v.html ? v.html : esc(v)}</span></div>`
       ).join("");
