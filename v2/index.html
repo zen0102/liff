@@ -502,7 +502,8 @@
   let liffReady = false;
   let token = "";
   let me = null;               // ข้อมูลเจ้าหน้าที่
-  let hnFormat = "";
+  let hnFormat = "";            // แสดงผล เช่น "NN-NN-NNNNNN หรือ SIM-NNNNNNNNNNNN"
+  let hnFormats = [];           // ทุกรูปแบบจาก HospitalTable คอลัมน์ A (ผ่านรูปแบบใดก็ได้)
   let hnFormatLoaded = false;   // โหลดรูปแบบ HN สำเร็จแล้วหรือยัง (ว่าง = ไม่ได้กำหนดรูปแบบ)
   let currentHn = "";
   let current = null;          // ผล patient.get ล่าสุด
@@ -763,7 +764,9 @@
     if (hnFormatLoaded) return true;
     try {
       const c = await api("meta.config");
-      hnFormat = String(c.hnFormat || "").trim().toUpperCase();
+      hnFormats = (Array.isArray(c.hnFormats) && c.hnFormats.length ? c.hnFormats : [c.hnFormat])
+        .map(f => String(f || "").trim().toUpperCase()).filter(Boolean);
+      hnFormat = hnFormats.join(" หรือ ");
       hnFormatLoaded = true;
     } catch (e) {
       console.warn("HN format:", e);
@@ -787,8 +790,12 @@
   }
 
   function isValidHn(hn) {
-    if (!hnFormat) return true;
+    if (!hnFormats.length) return true;
     const val = hn.trim().toUpperCase();
+    return hnFormats.some(f => matchHnFormat(val, f));
+  }
+
+  function matchHnFormat(val, hnFormat) {
     if (val.length !== hnFormat.length) return false;
     for (let i = 0; i < hnFormat.length; i++) {
       const ch = val[i], rule = hnFormat[i];
