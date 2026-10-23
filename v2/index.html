@@ -118,10 +118,26 @@
     .dt24-read b { font-size: 20px; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
     .dob-show { font-weight: 700; font-variant-numeric: tabular-nums; }
     .dob-show small { display: block; font-weight: 400; color: #666; font-size: 0.8rem; }
+    /* หน้าจอรอเต็มจอ (บันทึก / ค้นหา) */
+    .busy-backdrop { position: fixed; inset: 0; z-index: 4000; background: rgba(0,0,0,.45);
+      display: none; align-items: center; justify-content: center; padding: 24px; }
+    .busy-backdrop.on { display: flex; }
+    .busy-box { background: #fff; border-radius: 16px; padding: 26px 22px; min-width: 220px; text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+    .busy-spin { width: 46px; height: 46px; margin: 0 auto 14px; border-radius: 50%;
+      border: 5px solid #e6f4ea; border-top-color: #00b900; animation: busyspin .8s linear infinite; }
+    .busy-text { font-size: 18px; font-weight: 700; color: #222; }
+    .busy-sub { font-size: 13px; color: #777; margin-top: 4px; }
+    @keyframes busyspin { to { transform: rotate(360deg); } }
   </style>
 </head>
 
 <body>
+<div class="busy-backdrop" id="busy" role="alert" aria-live="assertive">
+  <div class="busy-box"><div class="busy-spin"></div>
+    <div class="busy-text" id="busyText">กำลังบันทึก...</div>
+    <div class="busy-sub">กรุณารอสักครู่ อย่าปิดหน้านี้</div></div>
+</div>
 <div class="container" style="max-width: 450px;">
   <div class="card text-center">
 
@@ -243,7 +259,7 @@
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
-      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 14:25</div>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 15:05</div>
     </div>
   </div>
 </div>
@@ -866,8 +882,7 @@
   // =====================================================
   async function handleSearch(hn) {
     currentHn = hn;
-    $("loadingStatus").innerText = "⏳ กำลังค้นหา...";
-    $("loadingStatus").style.display = "block";
+    showBusy("กำลังค้นหา HN " + hn + "...");
     $("resultArea").style.display = "none";
 
     try {
@@ -875,9 +890,10 @@
       current = r;
       renderResult(r);
     } catch (e) {
+      hideBusy();
       if (!e.auth) alert(e.message);
     } finally {
-      $("loadingStatus").style.display = "none";
+      hideBusy();
     }
   }
 
@@ -959,22 +975,26 @@
     if (ok) saveData(val, isUpdate);
   }
 
+  function showBusy(text) { $("busyText").innerText = text; $("busy").classList.add("on"); }
+  function hideBusy() { $("busy").classList.remove("on"); }
+
   async function saveData(birth, isUpdate) {
-    $("loadingStatus").innerText = "⏳ กำลังบันทึก...";
-    $("loadingStatus").style.display = "block";
+    showBusy(isUpdate ? "กำลังบันทึกการแก้ไข..." : "กำลังลงทะเบียน...");
     try {
       const r = await api("patient.save", {
         hn: currentHn,
         mode: isUpdate ? "update" : "create",
         fields: { birth: birth }
       });
-      alert("✅ " + r.message);
       current = { found: true, canEdit: me.canEdit, patient: r.patient };
       renderResult(current);
+      hideBusy();
+      alert("✅ " + r.message);
     } catch (e) {
+      hideBusy();
       if (!e.auth) alert("❌ " + e.message);
     } finally {
-      $("loadingStatus").style.display = "none";
+      hideBusy();
     }
   }
 
