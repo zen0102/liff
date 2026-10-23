@@ -236,7 +236,7 @@
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
-      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 13:40</div>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 13:45</div>
     </div>
   </div>
 </div>
@@ -808,19 +808,23 @@
 
   async function scanCode() {
     if (!inLine) return alert("สแกนได้เฉพาะในแอป LINE — พิมพ์ HN แทน");
-    let result = null;
-    try {
-      result = liff.scanCodeV2 ? await liff.scanCodeV2() : await liff.scanCode();
-    } catch (err) {
-      console.error("scanCodeV2:", err);
-      try {                                   // สำรอง: ตัวสแกนแบบเดียวกับ LIFF เดิม
-        if (!liff.scanCode) throw err;
-        result = await liff.scanCode();
-      } catch (e2) {
-        return alert("❌ เปิดตัวสแกนไม่ได้\n" + (e2 && (e2.message || e2.code) || e2) +
-          "\n\nตรวจว่าเปิด Scan QR ใน LIFF แล้ว หรือพิมพ์ HN แทน");
-      }
+    // ใช้กล้องของแอป LINE ก่อน (แบบ LIFF เดิม — สแกนเสร็จปิดเอง)
+    // ถ้ามือถือไม่รองรับ (เช่น iPhone) ค่อยใช้ scanCodeV2 ที่เป็นหน้าเว็บซ้อน
+    const avail = name => typeof liff[name] === "function" &&
+      (!liff.isApiAvailable || liff.isApiAvailable(name));
+    const order = ["scanCode", "scanCodeV2"].filter(avail);
+    if (!order.length) return alert("❌ มือถือนี้ใช้ตัวสแกนของ LINE ไม่ได้ — พิมพ์ HN แทน");
+
+    let result = null, lastErr = null;
+    for (const fn of order) {
+      try { result = await liff[fn](); lastErr = null; break; }
+      catch (err) { console.error(fn + ":", err); lastErr = err; }
     }
+    if (lastErr) {
+      return alert("❌ เปิดตัวสแกนไม่ได้\n" + (lastErr.message || lastErr.code || lastErr) +
+        "\n\nตรวจว่าเปิด Scan QR ใน LIFF แล้ว หรือพิมพ์ HN แทน");
+    }
+    await new Promise(r => setTimeout(r, 300));   // รอหน้ากล้องปิดก่อนแสดงผล
     const rawHn = String((result && result.value) || "").trim().toUpperCase();
     if (!rawHn) return;                       // ปิดตัวสแกนโดยไม่ได้สแกน
     $("inHN").value = rawHn;                  // แสดง HN ที่สแกนได้ในช่อง
