@@ -259,7 +259,7 @@
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
-      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 16:05</div>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 22:00</div>
     </div>
   </div>
 </div>
@@ -527,7 +527,39 @@
   let me = null;               // ข้อมูลเจ้าหน้าที่
   let hnFormat = "";            // แสดงผล เช่น "NN-NN-NNNNNN หรือ SIM-NNNNNNNNNNNN"
   let hnFormats = [];           // ทุกรูปแบบจาก HospitalTable คอลัมน์ A (ผ่านรูปแบบใดก็ได้)
-  let hnFormatLoaded = false;   // โหลดรูปแบบ HN สำเร็จแล้วหรือยัง (ว่าง = ไม่ได้กำหนดรูปแบบ)
+  let hnFormatLoaded = false;
+
+  // ลิงก์จากแจ้งเตือน LINE: liff.line.me/<id>?pid=<PatientID> → เปิดผู้ป่วยรายนั้นหลังเข้าระบบ
+  let pendingPid = readLinkPid();
+  function readLinkPid() {
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.get("pid")) return q.get("pid");
+      const st = q.get("liff.state");                 // ครั้งแรกที่ LINE เปิด query จะอยู่ใน liff.state
+      if (st) return new URLSearchParams(st.slice(st.indexOf("?") + 1)).get("pid") || "";
+    } catch (e) {}
+    return "";
+  }
+
+  async function openPendingPatient() {
+    const pid = pendingPid || readLinkPid();
+    pendingPid = "";
+    if (!pid) return;
+    try { history.replaceState(null, "", location.pathname); } catch (e) {}   // กันเปิดซ้ำตอนรีเฟรช
+    showBusy("กำลังเปิดผู้ป่วยจากแจ้งเตือน...");
+    try {
+      const r = await api("patient.get", { pid: pid });
+      currentHn = r.patient.hn;
+      $("inHN").value = currentHn;
+      current = r;
+      renderResult(r);
+      hideBusy();
+      $("resultArea").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      hideBusy();
+      if (!e.auth) alert("❌ " + e.message);
+    }
+  }   // โหลดรูปแบบ HN สำเร็จแล้วหรือยัง (ว่าง = ไม่ได้กำหนดรูปแบบ)
   let currentHn = "";
   let current = null;          // ผล patient.get ล่าสุด
   let pinMode = "pin";         // "pin" = เข้าด้วย PIN · "link" = PIN เพื่อผูก LINE
@@ -776,6 +808,7 @@
     $("userChannel").innerText =
       me.channel === "LINE" ? "เข้าด้วย LINE" : "เข้าด้วย PIN";
     showLineProfile();
+    openPendingPatient();
     $("swPinWrap").style.display = me.channel === "LINE" ? "" : "none";
 
     const banner = $("pinBanner");
