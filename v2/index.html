@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover">
+  <title>Patient Registration</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+  <style>
+    body { background-color: #f0f2f5; padding: 20px 16px; font-family: sans-serif; }
+    .card { border: none; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
+    .profile-section {
+      background: linear-gradient(135deg, #00b900 0%, #009900 100%);
+      padding: 22px 20px; color: white; text-align: center;
+    }
+    .profile-section h4 { margin: 0; }
+    #pictureUrl {
+      width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
+      border: 3px solid rgba(255,255,255,0.3); margin-bottom: 8px;
+    }
+    .line-name { font-size: 0.85rem; margin-top: 8px; opacity: .95; }
+    .uid-badge {
+      background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 12px;
+      font-size: 0.7rem; font-family: monospace; display: inline-block; margin-top: 4px;
+      max-width: 100%; overflow-wrap: anywhere;
+    }
+    .ch-badge {
+      background: rgba(0,0,0,0.2); padding: 3px 10px; border-radius: 12px;
+      font-size: 0.75rem; display: inline-block; margin-top: 6px;
+    }
+    .btn-scan {
+      background-color: #00b900; color: white; font-weight: bold; padding: 18px;
+      border-radius: 12px; width: 100%; border: none; font-size: 1.2rem;
+    }
+    .btn-line { background: #06c755; color: #fff; border: none; }
+    .btn-line:hover { background: #05b34c; color: #fff; }
+    .big-btn { padding: 16px; font-size: 1.1rem; font-weight: bold; border-radius: 12px; width: 100%; }
+    .status-box {
+      background: #fff; padding: 18px; border-radius: 15px; margin-top: 18px;
+      border: 1px solid #e0e0e0; text-align: left;
+    }
+    .data-row {
+      display: flex; justify-content: space-between; gap: 10px; font-size: 0.9rem;
+      border-bottom: 1px solid #f3f3f3; padding: 5px 0;
+    }
+    .data-label { color: #777; font-weight: bold; white-space: nowrap; }
+    .hn-highlight { color: #00b900; font-weight: 800; font-size: 1.3rem; }
+    .loading-overlay { display: none; color: #00b900; font-weight: bold; margin: 10px 0; text-align: center; }
+    .warn-box {
+      background: #fff3cd; color: #856404; border: 1px solid #ffe69c;
+      border-radius: 10px; padding: 10px; margin-top: 12px; font-size: 0.9rem;
+    }
+    .info-box {
+      background: #e8f0fe; color: #1a4fa0; border: 1px solid #c6dafc;
+      border-radius: 10px; padding: 10px; margin-bottom: 12px; font-size: 0.88rem;
+    }
+    .datetime-hint { color: #6c757d; font-size: 0.85rem; margin-bottom: 8px; }
+    .err-text { color: #d93025; font-size: 0.9rem; min-height: 1.2em; margin-top: 10px; text-align: center; }
+    .screen { display: none; }
+    .pin-input { font-size: 1.3rem; letter-spacing: 3px; text-align: center; }
+    .divider { text-align: center; color: #999; font-size: 0.85rem; margin: 14px 0; }
+    /* POP UP ยืนยันวันเวลาเกิด */
+    .dobm-backdrop { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,.55);
+      display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .dobm { background: #fff; border-radius: 14px; width: 100%; max-width: 420px; max-height: 92vh;
+      overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.35); font-family: inherit; color: #222; }
+    .dobm-head { padding: 14px 16px; font-size: 18px; font-weight: 700; color: #fff; }
+    .dobm-head.dobm-t-edit { background: #e8710a; } .dobm-head.dobm-t-new { background: #1a73e8; }
+    .dobm-body { padding: 14px 16px; }
+    .dobm-info div { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; font-size: 15px; }
+    .dobm-info span { color: #666; } .dobm-info { margin-bottom: 12px; border-bottom: 1px dashed #ddd; padding-bottom: 8px; }
+    .dobm-box { border-radius: 10px; padding: 10px 12px; border: 2px solid; text-align: center; }
+    .dobm-lbl { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+    .dobm-val { font-size: 26px; font-weight: 700; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+    .dobm-val small { font-size: 15px; }
+    .dobm-long { font-size: 13px; color: #555; }
+    .dobm-empty { font-size: 18px; color: #888; }
+    .dobm-old { border-color: #d0d0d0; background: #f5f5f5; color: #777; }
+    .dobm-old .dobm-val { text-decoration: line-through; text-decoration-color: #d93025; }
+    .dobm-new { border-color: #188038; background: #e6f4ea; color: #0d5a26; }
+    .dobm-same { border-color: #c6dafc; background: #e8f0fe; color: #1a4fa0; }
+    .dobm-chg { background: #ffeb3b; color: #000; border-radius: 4px; padding: 0 3px; }
+    .dobm-arrow { text-align: center; color: #e8710a; font-weight: 700; font-size: 13px; margin: 6px 0; }
+    .dobm-fmt { font-size: 12px; color: #777; text-align: center; margin-top: 6px; }
+    .dobm-warn { background: #fce8e6; color: #b3261e; border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 14px; font-weight: 600; }
+    .dobm-extra { background: #f8f9fa; border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 14px; }
+    .dobm-check { display: flex; gap: 8px; align-items: center; margin-top: 12px; padding: 10px; border-radius: 8px;
+      background: #fff8e1; border: 1px solid #ffe082; font-size: 15px; cursor: pointer; }
+    .dobm-check input { width: 22px; height: 22px; flex: none; margin: 0; }
+    .dobm-foot { display: flex; gap: 10px; padding: 12px 16px 16px; }
+    .dobm-foot button { flex: 1; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: 700;
+      font-family: inherit; cursor: pointer; border: none; }
+    .dobm-cancel { background: #e8eaed; color: #333; }
+    .dobm-ok { color: #fff; } .dobm-ok.dobm-t-edit { background: #e8710a; } .dobm-ok.dobm-t-new { background: #1a73e8; }
+    .dobm-ok:disabled { background: #bdbdbd; cursor: not-allowed; }
+    .dt24 { display: flex; flex-direction: column; gap: 8px; }
+    .dt24-row { display: flex; align-items: center; gap: 6px; }
+    .dt24-row select { flex: 1; width: auto; min-width: 0; }
+    .dt24-date select:nth-child(2) { flex: 1.6; }
+    .dt24-row span { font-weight: 600; }
+    .dt24-read { font-size: 14px; color: #888; background: #f5f5f5; border-radius: 8px; padding: 8px 10px; text-align: center; }
+    .dt24-lbl { font-size: 13px; color: #555; font-weight: 600; margin-bottom: -2px; }
+    .dt24-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .dt24-chips button { padding: 8px 2px; border-radius: 10px; border: 2px solid #cfd8dc; background: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 700; color: #333; cursor: pointer; line-height: 1.2; }
+    .dt24-chips button small { display: block; font-size: 12px; font-weight: 400; color: #666; }
+    .dt24-chips button.on { border-color: #188038; background: #e6f4ea; color: #0d5a26; }
+    .dt24-chips button:disabled { opacity: .6; cursor: default; }
+    .dt24-time input { flex: 1; font-size: 22px !important; text-align: center; letter-spacing: 2px;
+      font-variant-numeric: tabular-nums; }
+    .dt24-read.bad { color: #b3261e; background: #fce8e6; }
+    .dt24-old { font-size: 14px; color: #555; background: #f1f3f4; border: 1px dashed #bbb; border-radius: 8px;
+      padding: 8px 10px; text-align: center; }
+    .dt24-old b, .dt24-read b { font-size: 20px; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+    .dt24-tag { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+    .dt24-read.chg { color: #8a4b00; background: #fff4e5; border: 2px solid #e8710a; }
+    .dt24-read.ok { color: #0d5a26; background: #e6f4ea; }
+    .dt24-read b { font-size: 20px; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+    .dob-show { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .dob-show small { display: block; font-weight: 400; color: #666; font-size: 0.8rem; }
+  </style>
+</head>
+
+<body>
+<div class="container" style="max-width: 450px;">
+  <div class="card text-center">
+
+    <!-- ส่วนหัว: ผู้ใช้ที่เข้าระบบ -->
+    <div id="userInfo" class="profile-section" style="display:none;">
+      <img id="pictureUrl" src="" alt="" style="display:none;">
+      <h4 id="userName">-</h4>
+      <div id="userRole" style="font-size:0.85rem;opacity:.9;"></div>
+      <div class="ch-badge" id="userChannel"></div>
+      <div id="lineInfo" style="display:none;">
+        <div class="line-name">LINE: <span id="displayName"></span></div>
+        <div class="uid-badge">UID: <span id="userIdDisplay">...</span></div>
+      </div>
+    </div>
+
+    <div class="card-body p-4">
+
+      <!-- ===================== กำลังโหลด ===================== -->
+      <div id="scrLoading" class="screen" style="display:block;">
+        <div class="text-muted py-4">⏳ กำลังเตรียมระบบ...</div>
+      </div>
+
+      <!-- ===================== เลือกวิธีเข้า (ใน LINE) ===================== -->
+      <div id="scrChoose" class="screen">
+        <h5 class="fw-bold mb-1">เข้าสู่ระบบ</h5>
+        <p class="text-muted small mb-4">เลือกวิธีเข้าใช้งาน</p>
+        <button class="btn btn-line big-btn mb-3" onclick="loginWithLine()">🟢 เข้าด้วย LINE</button>
+        <button class="btn btn-outline-secondary big-btn" onclick="showPinScreen('pin')">🔢 เข้าด้วย PIN</button>
+        <p class="text-muted small mt-3 mb-0">
+          เข้าด้วย LINE ครั้งแรก ระบบจะขอ PIN ครั้งเดียวเพื่อผูกบัญชี
+        </p>
+      </div>
+
+      <!-- ===================== PIN ===================== -->
+      <div id="scrPin" class="screen">
+        <h5 class="fw-bold mb-1" id="pinTitle">เข้าด้วย PIN</h5>
+        <div class="info-box text-start" id="pinLinkInfo" style="display:none;"></div>
+        <input id="inStaff" class="form-control form-control-lg mb-2 text-center" placeholder="รหัสเจ้าหน้าที่ เช่น ST001"
+               autocomplete="username" style="text-transform:uppercase;">
+        <input id="inPin" type="password" inputmode="numeric" maxlength="6" class="form-control form-control-lg mb-3 pin-input"
+               placeholder="PIN 6 หลัก" autocomplete="current-password" onkeydown="if(event.key==='Enter')doPinLogin()">
+        <button class="btn btn-success big-btn" id="btnPinLogin" onclick="doPinLogin()">เข้าสู่ระบบ</button>
+        <div class="err-text" id="pinErr"></div>
+        <p class="text-muted small mt-2 mb-0">ลืม PIN? ติดต่อ Admin เพื่อออก PIN ใหม่</p>
+        <button class="btn btn-link btn-sm text-muted text-decoration-none mt-2" id="pinBack" onclick="showChoose()">← กลับ</button>
+      </div>
+
+      <!-- ===================== ตั้ง / เปลี่ยน PIN ===================== -->
+      <div id="scrChangePin" class="screen">
+        <h5 class="fw-bold mb-1">ตั้ง PIN ใหม่</h5>
+        <p class="text-muted small mb-3" id="cpHint">ตัวเลข 6 หลัก ห้ามเลขเรียงหรือเลขซ้ำทั้งหมด</p>
+        <input id="cpOld" type="password" inputmode="numeric" maxlength="6" class="form-control form-control-lg mb-2 pin-input" placeholder="PIN เดิม / PIN ชั่วคราว">
+        <input id="cpNew1" type="password" inputmode="numeric" maxlength="6" class="form-control form-control-lg mb-2 pin-input" placeholder="PIN ใหม่">
+        <input id="cpNew2" type="password" inputmode="numeric" maxlength="6" class="form-control form-control-lg mb-3 pin-input" placeholder="ยืนยัน PIN ใหม่">
+        <button class="btn btn-success big-btn" id="btnCp" onclick="doChangePin()">บันทึก PIN ใหม่</button>
+        <div class="err-text" id="cpErr"></div>
+        <button class="btn btn-link btn-sm text-muted text-decoration-none" id="cpCancel" onclick="showMain()">ยกเลิก</button>
+      </div>
+
+      <!-- ===================== หน้าหลัก ===================== -->
+      <div id="scrMain" class="screen">
+
+        <div class="warn-box text-start mt-0 mb-3" id="pinBanner" style="display:none;"></div>
+
+        <button id="btnScan" class="btn-scan mb-2" onclick="scanCode()">📷 สแกนรหัส HN</button>
+
+        <div class="divider" id="orDivider">หรือพิมพ์ HN</div>
+        <div class="input-group mb-2">
+          <input id="inHN" class="form-control form-control-lg" placeholder="HN" autocomplete="off"
+                 style="text-transform:uppercase;" onkeydown="if(event.key==='Enter')searchTyped()">
+          <button class="btn btn-outline-success" onclick="searchTyped()">ค้นหา</button>
+        </div>
+
+        <div id="loadingStatus" class="loading-overlay">⏳ กำลังดำเนินการ...</div>
+
+        <div class="status-box" id="resultArea" style="display:none;">
+          <span class="data-label">เลข HN:</span>
+          <div id="scanCodeDisplay" class="hn-highlight mb-2">-</div>
+
+          <!-- พบผู้ป่วย -->
+          <div id="foundSection" style="display:none;">
+            <p class="text-success fw-bold mb-2">✅ ข้อมูลผู้ป่วย</p>
+            <div id="patientDetails" class="mb-3"></div>
+
+            <div id="editArea">
+              <label class="form-label fw-bold">แก้ไขวันเวลาเกิด:</label>
+              <div id="editBirthDate" class="mb-3"></div>
+              <button class="btn btn-success w-100 py-2" onclick="confirmSave()">ยืนยันการแก้ไข</button>
+            </div>
+            <div id="noEditPermission" class="warn-box" style="display:none;">🔒 คุณไม่มีสิทธิ์แก้ไขข้อมูลผู้ป่วย</div>
+          </div>
+
+          <!-- ไม่พบ → ลงทะเบียนใหม่ -->
+          <div id="notFoundSection" style="display:none;">
+            <p class="text-primary fw-bold mb-2">🆕 ไม่พบข้อมูล — ลงทะเบียนใหม่</p>
+            <div id="newBlocked" class="warn-box" style="display:none;"></div>
+            <div id="newForm">
+              <label class="form-label fw-bold">ระบุวันเวลาเกิด:</label>
+              <div id="newBirthDate" class="mb-3"></div>
+              <button class="btn btn-primary w-100 py-2" onclick="confirmSave()">บันทึกข้อมูลใหม่</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <button class="btn btn-link btn-sm text-muted text-decoration-none" onclick="openChangePin(false)">เปลี่ยน PIN</button>
+          ·
+          <button class="btn btn-link btn-sm text-muted text-decoration-none" onclick="doLogout()">ออกจากระบบ</button>
+        </div>
+      </div>
+
+      <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
+              onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
+    </div>
+  </div>
+</div>
+
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+
+  // =====================================================
+  // ช่องวันเวลาเกิดแบบ 24 ชั่วโมง
+  // (ช่องวันที่/เวลาของเครื่องแสดงตามภาษาเครื่อง เช่น ดด/วว/ปปปป, พ.ศ., AM/PM → ปุ่มเลือกวัน (วันนี้/เมื่อวาน/วันอื่น) + พิมพ์เวลา 4 ตัว)
+  // ใช้ .value / .disabled / .focus() ได้เหมือน input เดิม — ค่า = "yyyy-MM-ddTHH:mm"
+  // =====================================================
+  // =====================================================
+  // POP UP ยืนยันวันเวลาเกิด — เทียบค่าเดิม/ค่าใหม่ในรูปแบบเดียวกัน วว/ดด/ปปปป ชช:นน (24 ชม.)
+  // ต้องติ๊ก "ตรวจสอบแล้ว" ก่อนปุ่มยืนยันจะกดได้
+  // =====================================================
+  const DOBM_DAYS = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+  const DOBM_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  const dobmEsc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
+    c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  /** "yyyy-MM-ddTHH:mm" → { date:"dd/MM/yyyy", time:"HH:mm", long:"วันศุกร์ 17 ต.ค. 2026", ms } | null */
+  function dobParts(v) {
+    const x = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(v || "");
+    if (!x) return null;
+    const dt = new Date(+x[1], +x[2] - 1, +x[3], +x[4], +x[5]);
+    return {
+      date: `${x[3]}/${x[2]}/${x[1]}`, time: `${x[4]}:${x[5]}`,
+      long: `วัน${DOBM_DAYS[dt.getDay()]}ที่ ${+x[3]} ${DOBM_MONTHS[+x[2] - 1]} ${x[1]}`,
+      ms: dt.getTime()
+    };
+  }
+
+  /**
+   * opt = { title, tone: "edit" | "new", info: [[label, value], ...],
+   *         oldVal: "yyyy-MM-ddTHH:mm" | "" (เฉพาะแก้ไข; ไม่ส่ง = ลงทะเบียนใหม่), oldRaw: ข้อความเดิมถ้าแปลงไม่ได้,
+   *         newVal: "yyyy-MM-ddTHH:mm", extra: ["ข้อความการเปลี่ยนแปลงอื่น", ...], okText }
+   * → Promise<boolean>
+   */
+  function confirmDob(opt) {
+    return new Promise(resolve => {
+      const isEdit = "oldVal" in opt;
+      const o = isEdit ? dobParts(opt.oldVal) : null;
+      const n = dobParts(opt.newVal);
+      const same = isEdit && opt.oldVal === opt.newVal;
+      const needCheck = isEdit && !same;     // แก้ DOB ผู้ป่วยเดิม → ต้องติ๊กยืนยัน (ลงทะเบียนใหม่ไม่ต้อง)
+      const mark = (txt, on) => on ? `<span class="dobm-chg">${txt}</span>` : txt;
+
+      const box = (cls, label, p, raw, diff) => `
+        <div class="dobm-box ${cls}">
+          <div class="dobm-lbl">${label}</div>
+          ${p ? `<div class="dobm-val">${mark(p.date, diff && diff.date)}&nbsp;&nbsp;${mark(p.time, diff && diff.time)} <small>น.</small></div>
+                 <div class="dobm-long">${p.long} · เวลา ${p.time} น.</div>`
+              : `<div class="dobm-val dobm-empty">${raw ? dobmEsc(raw) : "— ยังไม่มีข้อมูล —"}</div>`}
+        </div>`;
+
+      let body = "";
+      if (!isEdit) {
+        body = box("dobm-new", "วันเวลาเกิดที่จะบันทึก", n);
+      } else if (same) {
+        body = box("dobm-same", "วันเวลาเกิด (ไม่เปลี่ยน)", n);
+      } else {
+        const diff = o ? { date: o.date !== n.date, time: o.time !== n.time } : null;
+        body = box("dobm-old", "❌ ค่าเดิม", o, opt.oldRaw) +
+               `<div class="dobm-arrow">▼ เปลี่ยนเป็น ▼</div>` +
+               box("dobm-new", "✅ ค่าใหม่", n, "", diff);
+      }
+
+      const warns = [];
+      if (n && n.ms > Date.now()) warns.push("วันเวลาเกิดอยู่ในอนาคต");
+      if (n && Date.now() - n.ms > 60 * 864e5) warns.push("วันเกิดเกิน 60 วันมาแล้ว — ตรวจสอบปี/เดือนอีกครั้ง");
+
+      const wrap = document.createElement("div");
+      wrap.className = "dobm-backdrop";
+      wrap.innerHTML = `
+        <div class="dobm" role="dialog" aria-modal="true">
+          <div class="dobm-head dobm-t-${opt.tone || "edit"}">${dobmEsc(opt.title)}</div>
+          <div class="dobm-body">
+            <div class="dobm-info">${(opt.info || []).map(([k, v]) =>
+              `<div><span>${dobmEsc(k)}</span><b>${dobmEsc(v || "-")}</b></div>`).join("")}</div>
+            ${body}
+            <div class="dobm-fmt">รูปแบบ: วัน/เดือน/ปี ค.ศ. &nbsp;ชั่วโมง:นาที (24 ชั่วโมง)</div>
+            ${warns.map(w => `<div class="dobm-warn">⚠ ${w}</div>`).join("")}
+            ${(opt.extra || []).length ? `<div class="dobm-extra"><b>การเปลี่ยนแปลงอื่น</b>${
+              opt.extra.map(t => `<div>• ${dobmEsc(t)}</div>`).join("")}</div>` : ""}
+            ${needCheck ? `<label class="dobm-check"><input type="checkbox">
+              <span>ตรวจสอบ <b>วัน เดือน ปี และเวลา</b> แล้ว ถูกต้อง</span></label>` : ""}
+          </div>
+          <div class="dobm-foot">
+            <button type="button" class="dobm-cancel">ยกเลิก</button>
+            <button type="button" class="dobm-ok dobm-t-${opt.tone || "edit"}" ${needCheck ? "disabled" : ""}>${dobmEsc(opt.okText || "ยืนยันบันทึก")}</button>
+          </div>
+        </div>`;
+      document.body.appendChild(wrap);
+
+      const ok = wrap.querySelector(".dobm-ok");
+      const chk = wrap.querySelector(".dobm-check input");
+      if (chk) chk.addEventListener("change", () => ok.disabled = !chk.checked);
+      const done = v => { document.removeEventListener("keydown", onKey); wrap.remove(); resolve(v); };
+      const onKey = e => { if (e.key === "Escape") done(false); };
+      document.addEventListener("keydown", onKey);
+      wrap.querySelector(".dobm-cancel").onclick = () => done(false);
+      ok.onclick = () => { if (!ok.disabled) done(true); };
+      wrap.querySelector(".dobm-cancel").focus();
+    });
+  }
+
+  /** วันเวลาเกิดสำหรับแสดงผล: 17/10/2026  08:30 น. + วันเสาร์ที่ 17 ต.ค. 2026 */
+  function dobShowHtml(p) {
+    const x = dobParts(p.birthInput);
+    if (!x) return p.birthText ? dobmEsc(p.birthText) : "ว่าง";
+    return `<span class="dob-show">${x.date}&nbsp; ${x.time} น.<small>${x.long}</small></span>`;
+  }
+
+  function makeDateTime24(id, cls) {
+    const box = document.getElementById(id);
+    if (!box) return;
+    const pad = n => String(n).padStart(2, "0");
+    const sel = (label, ph, items) =>
+      `<select class="${cls.select || ""}" aria-label="${label}"><option value="">${ph}</option>${
+        items.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select>`;
+    const range = (a, b, f) => Array.from({ length: b - a + 1 }, (_, i) => f(a + i));
+    const thisYear = new Date().getFullYear();
+    const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const CHIPS = [["วันนี้", 0], ["เมื่อวาน", 1]];
+
+    box.classList.add("dt24");
+    box.innerHTML =
+      `<div class="dt24-old" style="display:none"></div>` +
+      `<div class="dt24-lbl">วันที่</div>` +
+      `<div class="dt24-chips">${CHIPS.map(([t, n]) =>
+        `<button type="button" data-ago="${n}">${t}<small></small></button>`).join("")}` +
+        `<button type="button" data-ago="other">วันอื่น<small>เลือกเอง</small></button></div>` +
+      `<div class="dt24-row dt24-date" style="display:none">` +
+        sel("วัน", "วัน", range(1, 31, i => [pad(i), pad(i)])) +
+        sel("เดือน", "เดือน", range(1, 12, i => [pad(i), `${pad(i)} - ${DOBM_MONTHS[i - 1]}`])) +
+        sel("ปี ค.ศ.", "ปี ค.ศ.", range(thisYear - 1, thisYear, y => [String(y), String(y)]).reverse()) +
+      `</div>` +
+      `<div class="dt24-lbl">เวลา (24 ชม.) — พิมพ์ 4 ตัว เช่น 0830, 2045</div>` +
+      `<div class="dt24-row dt24-time">` +
+        `<input type="text" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="ชช:นน" class="${cls.input || ""}">` +
+        `<span>น.</span></div>` +
+      `<div class="dt24-read"></div>`;
+    const [dd, mm, yy] = box.querySelectorAll("select");
+    const tm = box.querySelector(".dt24-time input");
+    const chips = [...box.querySelectorAll(".dt24-chips button")];
+    const dateRow = box.querySelector(".dt24-date");
+    const read = box.querySelector(".dt24-read");
+    const oldBox = box.querySelector(".dt24-old");
+    let orig = null;                             // ค่าเดิมในระบบ (null = ไม่แสดง)
+    let showOther = false;
+
+    const ensureYear = y => {
+      if (y && ![...yy.options].some(o => o.value === y)) yy.add(new Option(y, y), 1);
+    };
+    const setDate = s => {                       // s = "yyyy-MM-dd" | ""
+      const x = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
+      if (x) ensureYear(x[1]);
+      [yy.value, mm.value, dd.value] = x ? x.slice(1, 4) : ["", "", ""];
+    };
+    const dateVal = () => dd.value && mm.value && yy.value ? `${yy.value}-${mm.value}-${dd.value}` : "";
+    const timeVal = () => {                      // "0830" / "08:30" / "830" → "08:30" | null
+      const g = tm.value.replace(/\D/g, "");
+      if (g.length < 3) return null;
+      const h = +g.slice(0, g.length - 2), m = +g.slice(-2);
+      return h <= 23 && m <= 59 ? `${pad(h)}:${pad(m)}` : null;
+    };
+    const value = () => { const d = dateVal(), t = timeVal(); return d && t ? `${d}T${t}` : ""; };
+    const fixDays = () => {
+      const max = mm.value ? new Date(+(yy.value || 2000), +mm.value, 0).getDate() : 31;
+      [...dd.options].forEach(o => { if (o.value) o.disabled = +o.value > max; });
+      if (dd.value && +dd.value > max) dd.value = "";
+    };
+
+    const refresh = () => {
+      fixDays();
+      const now = new Date(), cur = dateVal();
+      let hit = false;
+      chips.forEach(b => {
+        if (b.dataset.ago === "other") return;
+        const d = new Date(now); d.setDate(d.getDate() - +b.dataset.ago);
+        b.dataset.date = ymd(d);
+        b.querySelector("small").textContent = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+        const on = !showOther && cur === b.dataset.date; if (on) hit = true;
+        b.classList.toggle("on", on);
+      });
+      const other = showOther || (cur && !hit);
+      chips[chips.length - 1].classList.toggle("on", !!other);
+      dateRow.style.display = other ? "" : "none";
+
+      const digits = tm.value.replace(/\D/g, "");
+      const p = dobParts(value());
+      const changed = p && orig !== null && value() !== orig.v;
+      read.className = "dt24-read" + (p ? (changed ? " chg" : " ok") : digits.length >= 3 && !timeVal() ? " bad" : "");
+      read.innerHTML = p
+        ? (orig === null ? "" : changed ? `<div class="dt24-tag">✏ เปลี่ยนเป็น</div>` : `<div class="dt24-tag">ไม่เปลี่ยน</div>`) +
+          `<b>${p.date}&nbsp; ${p.time} น.</b><br>${p.long} · เวลา ${p.time} น.`
+        : digits.length >= 3 && !timeVal() ? "เวลาไม่ถูกต้อง — ชั่วโมง 00–23 นาที 00–59"
+        : !cur ? "เลือกวันที่" : "พิมพ์เวลา 4 ตัว เช่น 0830";
+    };
+
+    chips.forEach(b => b.addEventListener("click", () => {
+      if (b.disabled) return;
+      if (b.dataset.ago === "other") { showOther = true; refresh(); dd.focus(); return; }
+      showOther = false; setDate(b.dataset.date); refresh();
+      if (!timeVal()) tm.focus();
+    }));
+    dateRow.addEventListener("change", refresh);
+    tm.addEventListener("input", () => {        // พิมพ์ 0830 → แสดง 08:30
+      const g = tm.value.replace(/\D/g, "").slice(0, 4);
+      tm.value = g.length > 2 ? g.slice(0, 2) + ":" + g.slice(2) : g;
+      refresh();
+    });
+    tm.addEventListener("blur", () => { const t = timeVal(); if (t) tm.value = t; refresh(); });
+
+    Object.defineProperty(box, "value", {
+      get: value,
+      set(v) {
+        const x = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(v || "");
+        showOther = false;
+        setDate(x ? x[1] : "");
+        tm.value = x ? x[2] : "";
+        refresh();
+      }
+    });
+    Object.defineProperty(box, "disabled", {
+      get() { return tm.disabled; },
+      set(on) { [dd, mm, yy, tm, ...chips].forEach(e => e.disabled = !!on); }
+    });
+    /** แสดงกรอบ "ค่าเดิมในระบบ" เหนือช่องแก้ไข — v = "yyyy-MM-ddTHH:mm" | "" , raw = ข้อความเดิมถ้าแปลงไม่ได้, null = ซ่อน */
+    box.setOriginal = (v, raw) => {
+      orig = v === null || v === undefined ? null : { v: v || "" };
+      const p = orig && dobParts(orig.v);
+      oldBox.style.display = orig ? "" : "none";
+      oldBox.innerHTML = !orig ? "" :
+        `<div class="dt24-tag">วันเวลาเกิดเดิมในระบบ</div>` + (p
+          ? `<b>${p.date}&nbsp; ${p.time} น.</b><br>${p.long} · เวลา ${p.time} น.`
+          : `<b>${raw ? dobmEsc(raw) : "— ยังไม่มีข้อมูล —"}</b>`);
+      refresh();
+    };
+    box.focus = () => (dateVal() ? tm : chips[0]).focus();
+    refresh();
+  }
+  makeDateTime24("editBirthDate", { input: "form-control border-success", select: "form-select border-success" });
+  makeDateTime24("newBirthDate",  { input: "form-control border-primary", select: "form-select border-primary" });
+
+  // =====================================================
+  // CONFIG — WEB_APP_URL = URL ของ Web App โปรเจกต์หลัก (Bilirubin Intelligence Pro)
+  // =====================================================
+  const WEB_APP_URL = "https://script.google.com/macros/s/ใส่_DEPLOYMENT_ID_ของโปรเจกต์หลัก/exec";
+  const LIFF_ID = "2009684330-hseYstha";
+
+  const TOKEN_KEY = "bip_liff_token";
+  const PREF_KEY = "bip_liff_pref";      // "line" = ครั้งหน้าเข้าด้วย LINE อัตโนมัติ
+
+  let inLine = false;          // เปิดในแอป LINE
+  let liffReady = false;
+  let token = "";
+  let me = null;               // ข้อมูลเจ้าหน้าที่
+  let hnFormat = "";
+  let currentHn = "";
+  let current = null;          // ผล patient.get ล่าสุด
+  let pinMode = "pin";         // "pin" = เข้าด้วย PIN · "link" = PIN เพื่อผูก LINE
+
+  const $ = id => document.getElementById(id);
+  const memGet = k => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
+  const memSet = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
+
+
+  // =====================================================
+  // เรียกเซิร์ฟเวอร์ (Api.gs → doPost)
+  // =====================================================
+  async function api(action, data) {
+    const res = await fetch(WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify(Object.assign({ action: action, token: token }, data || {}))
+    });
+    const j = await res.json();
+    if (j.ok) return j.data;
+    const err = new Error(j.error || "เกิดข้อผิดพลาด");
+    if (j.auth) { err.auth = true; sessionLost(j.error); }
+    if (j.mustChangePin) { err.auth = true; openChangePin(true); }
+    throw err;
+  }
+
+  function show(id) {
+    document.querySelectorAll(".screen").forEach(s => s.style.display = "none");
+    $(id).style.display = "block";
+  }
+
+
+  // =====================================================
+  // เริ่มต้น
+  // =====================================================
+  async function main() {
+    try {
+      await liff.init({ liffId: LIFF_ID });
+      liffReady = true;
+      inLine = liff.isInClient();
+    } catch (e) {
+      console.warn("LIFF init:", e);
+    }
+    $("btnClose").style.display = inLine ? "" : "none";
+
+    api("meta.config").then(c => { hnFormat = (c.hnFormat || "").toUpperCase(); }).catch(() => {});
+
+    // มีบัตรผ่านเดิม → ใช้ต่อ
+    token = memGet(TOKEN_KEY);
+    if (token) {
+      try {
+        me = await api("auth.me");
+        if (me.mustChangePin) return openChangePin(true);
+        return showMain();
+      } catch (e) { if (e.auth) return; token = ""; }
+    }
+
+    // ครั้งก่อนเลือก LINE → เข้า LINE อัตโนมัติ
+    if (inLine && memGet(PREF_KEY) === "line") return loginWithLine();
+
+    showChoose();
+  }
+
+  function showChoose() {
+    $("userInfo").style.display = "none";
+    $("lineInfo").style.display = "none";
+    if (inLine) show("scrChoose");
+    else showPinScreen("pin");      // นอก LINE ใช้ PIN อย่างเดียว
+  }
+
+  function sessionLost(msg) {
+    token = ""; me = null;
+    memSet(TOKEN_KEY, "");
+    showChoose();
+    if (msg && !inLine) $("pinErr").innerText = msg;
+    if (msg && inLine) alert(msg);
+  }
+
+  function setSession(res) {
+    token = res.token;
+    me = res.staff;
+    memSet(TOKEN_KEY, token);
+    if (me.mustChangePin) return openChangePin(true);
+    showMain();
+  }
+
+
+  // =====================================================
+  // เข้าด้วย LINE
+  // =====================================================
+  async function loginWithLine() {
+    if (!liffReady || !inLine) return showPinScreen("pin");
+    if (!liff.isLoggedIn()) return liff.login();
+
+    const idToken = liff.getIDToken();
+    if (!idToken) {
+      alert("LIFF ยังไม่ได้เปิดสิทธิ์ openid — ใช้ PIN แทนไปก่อน");
+      return showPinScreen("pin");
+    }
+
+    show("scrLoading");
+    try {
+      const r = await api("auth.line", { lineIdToken: idToken });
+      if (r.needPin) {
+        // LINE นี้ยังไม่ผูกกับเจ้าหน้าที่คนใด → กรอก PIN ครั้งเดียว
+        return showPinScreen("link", r.lineName);
+      }
+      memSet(PREF_KEY, "line");
+      setSession(r);
+    } catch (e) {
+      alert(e.message);
+      show("scrChoose");
+    }
+  }
+
+
+  // =====================================================
+  // เข้าด้วย PIN
+  // =====================================================
+  function showPinScreen(mode, lineName) {
+    pinMode = mode;
+    $("userInfo").style.display = "none";
+    $("pinTitle").innerText = mode === "link" ? "ผูก LINE กับบัญชีเจ้าหน้าที่" : "เข้าด้วย PIN";
+    $("pinLinkInfo").style.display = mode === "link" ? "block" : "none";
+    $("pinLinkInfo").innerText =
+      "LINE" + (lineName ? " (" + lineName + ")" : "") +
+      " นี้ยังไม่ได้ผูกกับบัญชีเจ้าหน้าที่ กรอกรหัสเจ้าหน้าที่ + PIN ครั้งเดียว ครั้งต่อไปกด \"เข้าด้วย LINE\" ได้เลย";
+    $("pinBack").style.display = inLine ? "" : "none";
+    $("inStaff").value = memGet("bip_last_staff");
+    $("inPin").value = "";
+    $("pinErr").innerText = "";
+    show("scrPin");
+    setTimeout(() => ($("inStaff").value ? $("inPin") : $("inStaff")).focus(), 50);
+  }
+
+  async function doPinLogin() {
+    const staffId = $("inStaff").value.trim().toUpperCase();
+    const pin = $("inPin").value.trim();
+    if (!staffId || !pin) return $("pinErr").innerText = "กรุณากรอกรหัสเจ้าหน้าที่และ PIN";
+
+    const data = { staffId: staffId, pin: pin };
+    if (pinMode === "link") data.lineIdToken = liff.getIDToken();
+
+    $("btnPinLogin").disabled = true;
+    $("pinErr").innerText = "";
+    try {
+      const r = await api("auth.login", data);
+      memSet("bip_last_staff", staffId);
+      if (pinMode === "link") {
+        memSet(PREF_KEY, "line");
+        if (r.justLinked) alert("✅ ผูก LINE เรียบร้อย ครั้งต่อไปกด \"เข้าด้วย LINE\" ได้เลย");
+      } else {
+        memSet(PREF_KEY, "");
+      }
+      setSession(r);
+    } catch (e) {
+      $("inPin").value = "";
+      $("pinErr").innerText = e.message;
+    } finally {
+      $("btnPinLogin").disabled = false;
+    }
+  }
+
+
+  // =====================================================
+  // ตั้ง / เปลี่ยน PIN
+  // =====================================================
+  function openChangePin(forced) {
+    $("userInfo").style.display = "none";
+    const needOld = !me || me.hasPin;
+    $("cpOld").style.display = needOld ? "" : "none";
+    $("cpCancel").style.display = forced ? "none" : "";
+    $("cpHint").innerText = forced
+      ? "คุณเข้าด้วย PIN ชั่วคราว กรุณาตั้ง PIN ของตัวเอง (ตัวเลข 6 หลัก ห้ามเลขเรียง/เลขซ้ำ)"
+      : needOld
+        ? "ตัวเลข 6 หลัก ห้ามเลขเรียงหรือเลขซ้ำทั้งหมด"
+        : "ตั้ง PIN สำรองไว้ใช้ตอนเปิดนอก LINE หรือบนคอมพิวเตอร์";
+    ["cpOld", "cpNew1", "cpNew2"].forEach(id => $(id).value = "");
+    $("cpErr").innerText = "";
+    show("scrChangePin");
+  }
+
+  async function doChangePin() {
+    const oldPin = $("cpOld").value.trim();
+    const n1 = $("cpNew1").value.trim();
+    const n2 = $("cpNew2").value.trim();
+    if ((me && me.hasPin && !oldPin) || !n1) return $("cpErr").innerText = "กรุณากรอกให้ครบ";
+    if (n1 !== n2) return $("cpErr").innerText = "PIN ใหม่ทั้งสองช่องไม่ตรงกัน";
+
+    $("btnCp").disabled = true;
+    try {
+      const r = await api("auth.changePin", { oldPin: oldPin, newPin: n1 });
+      alert("✅ ตั้ง PIN ใหม่เรียบร้อย");
+      setSession(r);
+    } catch (e) {
+      $("cpErr").innerText = e.message;
+    } finally {
+      $("btnCp").disabled = false;
+    }
+  }
+
+  function doLogout() {
+    if (!confirm("ออกจากระบบ?")) return;
+    memSet(PREF_KEY, "");
+    sessionLost("");
+  }
+
+
+  // =====================================================
+  // หน้าหลัก
+  // =====================================================
+  /** รูป + ชื่อ LINE + UID (เหมือน LIFF เดิม) — แสดงเมื่อเปิดใน LINE และล็อกอิน LINE อยู่ */
+  async function showLineProfile() {
+    $("lineInfo").style.display = "none";
+    $("pictureUrl").style.display = "none";
+    if (!liffReady || !liff.isLoggedIn()) return;
+    try {
+      const pf = await liff.getProfile();
+      $("displayName").innerText = pf.displayName || "-";
+      $("userIdDisplay").innerText = pf.userId || "-";
+      $("lineInfo").style.display = "block";
+      if (pf.pictureUrl) { $("pictureUrl").src = pf.pictureUrl; $("pictureUrl").style.display = ""; }
+    } catch (e) {
+      console.warn("LINE profile:", e);
+    }
+  }
+
+  function showMain() {
+    $("userInfo").style.display = "block";
+    $("userName").innerText = me.name || me.staffId;
+    $("userRole").innerText = me.staffId + (me.role ? " · " + me.role : "");
+    $("userChannel").innerText =
+      me.channel === "LINE" ? "เข้าด้วย LINE" : "เข้าด้วย PIN";
+    showLineProfile();
+
+    const banner = $("pinBanner");
+    if (me.channel === "LINE" && !me.hasPin) {
+      banner.style.display = "block";
+      banner.innerHTML = 'ยังไม่มี PIN สำรอง (ใช้ตอนเปิดนอก LINE / บนคอม) · <a href="#" onclick="openChangePin(false);return false;">ตั้ง PIN</a>';
+    } else if (me.pinIsTemp) {
+      banner.style.display = "block";
+      banner.innerHTML = 'PIN ของคุณยังเป็น PIN ชั่วคราว · <a href="#" onclick="openChangePin(false);return false;">ตั้ง PIN ใหม่</a>';
+    } else banner.style.display = "none";
+
+    $("btnScan").style.display = inLine ? "" : "none";
+    $("orDivider").innerText = inLine ? "หรือพิมพ์ HN" : "พิมพ์ HN";
+    show("scrMain");
+  }
+
+
+  // =====================================================
+  // HN
+  // =====================================================
+  function isValidHn(hn) {
+    if (!hnFormat) return true;
+    const val = hn.trim().toUpperCase();
+    if (val.length !== hnFormat.length) return false;
+    for (let i = 0; i < hnFormat.length; i++) {
+      const ch = val[i], rule = hnFormat[i];
+      if (rule === "N") { if (!/^[0-9]$/.test(ch)) return false; }
+      else if (rule === "C") { if (!/^[A-Z]$/.test(ch)) return false; }
+      else if (ch !== rule) return false;
+    }
+    return true;
+  }
+
+  async function scanCode() {
+    if (!inLine) return alert("สแกนได้เฉพาะในแอป LINE — พิมพ์ HN แทน");
+    try {
+      const result = liff.scanCodeV2 ? await liff.scanCodeV2() : await liff.scanCode();
+      if (!result || !result.value) return;
+      const rawHn = result.value.trim().toUpperCase();
+      if (!isValidHn(rawHn)) {
+        return alert(`❌ รูปแบบ HN ไม่ถูกต้อง!\nกำหนด: ${hnFormat}\nพบ: ${rawHn}\n(N=เลข, C=อักษร, - / ตรงตัว)`);
+      }
+      handleSearch(rawHn);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function searchTyped() {
+    const hn = $("inHN").value.trim().toUpperCase();
+    if (!hn) return;
+    handleSearch(hn);
+  }
+
+
+  // =====================================================
+  // ค้นหา
+  // =====================================================
+  async function handleSearch(hn) {
+    currentHn = hn;
+    $("loadingStatus").innerText = "⏳ กำลังค้นหา...";
+    $("loadingStatus").style.display = "block";
+    $("resultArea").style.display = "none";
+
+    try {
+      const r = await api("patient.get", { hn: hn });
+      current = r;
+      renderResult(r);
+    } catch (e) {
+      if (!e.auth) alert(e.message);
+    } finally {
+      $("loadingStatus").style.display = "none";
+    }
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g,
+      c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function renderResult(r) {
+    $("resultArea").style.display = "block";
+    $("scanCodeDisplay").innerText = currentHn;
+
+    if (r.found) {
+      const p = r.patient;
+      $("foundSection").style.display = "block";
+      $("notFoundSection").style.display = "none";
+
+      const rows = [
+        ["ชื่อ-สกุล", (p.first + " " + p.last).trim() || "-"],
+        ["วันเวลาเกิด", { html: dobShowHtml(p) }],
+        ["อายุตอนนี้", p.ageNow != null ? p.ageNow + " ชม. (" + (p.ageNow / 24).toFixed(1) + " วัน)" : "-"],
+        ["อายุครรภ์", p.gaText ? p.gaText + " สัปดาห์" : "-"],
+        ["น้ำหนัก", p.weight ? p.weight + " กรัม" : "-"],
+        ["เพศ", p.sex || "-"],
+        ["ปัจจัยเสี่ยงพิษต่อระบบประสาท", p.neuro || "-"],
+        ["ความเสี่ยง", p.risk || "-"],
+        ["PatientID", p.patientId || "-"]
+      ];
+      $("patientDetails").innerHTML = rows.map(([k, v]) =>
+        `<div class="data-row"><span class="data-label">${esc(k)}</span><span class="text-end">${v && v.html ? v.html : esc(v)}</span></div>`
+      ).join("");
+
+      $("editArea").style.display = r.canEdit ? "block" : "none";
+      $("noEditPermission").style.display = r.canEdit ? "none" : "block";
+      $("editBirthDate").value = p.birthInput || "";
+      $("editBirthDate").setOriginal(p.birthInput || "", p.birthText);
+
+    } else {
+      $("foundSection").style.display = "none";
+      $("notFoundSection").style.display = "block";
+      $("newBirthDate").value = "";
+
+      let block = "";
+      if (r.canCreate === false) block = "HN ขึ้นต้นด้วย SIM สงวนไว้สำหรับข้อมูลจำลอง";
+      else if (r.formatOk === false) block = `รูปแบบ HN ไม่ถูกต้อง (กำหนด ${r.hnFormat}) — ลงทะเบียนไม่ได้`;
+      $("newBlocked").style.display = block ? "block" : "none";
+      $("newBlocked").innerText = block ? "⚠ " + block : "";
+      $("newForm").style.display = block ? "none" : "block";
+    }
+  }
+
+
+  // =====================================================
+  // บันทึก
+  // =====================================================
+  async function confirmSave() {
+    if (!current) return;
+    const isUpdate = !!current.found;
+    if (isUpdate && !current.canEdit) return alert("🔒 คุณไม่มีสิทธิ์แก้ไขข้อมูลผู้ป่วย");
+
+    const val = $(isUpdate ? "editBirthDate" : "newBirthDate").value;
+    if (!val) return alert("กรุณาระบุวันเวลาเกิด");
+
+    let ok;
+    if (isUpdate) {
+      const p = current.patient;
+      if ((p.birthInput || "") === val) return alert("วันเวลาเกิดเหมือนเดิม — ไม่มีการเปลี่ยนแปลง");
+      ok = await confirmDob({
+        title: "⚠ ยืนยันการแก้ไขวันเวลาเกิด", tone: "edit", okText: "ยืนยันแก้ไข",
+        info: [["HN", currentHn], ["ชื่อ", (p.first + " " + p.last).trim()]],
+        oldVal: p.birthInput || "", oldRaw: p.birthText, newVal: val
+      });
+    } else {
+      ok = await confirmDob({
+        title: "🆕 ยืนยันลงทะเบียนผู้ป่วยใหม่", tone: "new", okText: "ยืนยันบันทึก",
+        info: [["HN", currentHn]], newVal: val
+      });
+    }
+    if (ok) saveData(val, isUpdate);
+  }
+
+  async function saveData(birth, isUpdate) {
+    $("loadingStatus").innerText = "⏳ กำลังบันทึก...";
+    $("loadingStatus").style.display = "block";
+    try {
+      const r = await api("patient.save", {
+        hn: currentHn,
+        mode: isUpdate ? "update" : "create",
+        fields: { birth: birth }
+      });
+      alert("✅ " + r.message);
+      current = { found: true, canEdit: me.canEdit, patient: r.patient };
+      renderResult(current);
+    } catch (e) {
+      if (!e.auth) alert("❌ " + e.message);
+    } finally {
+      $("loadingStatus").style.display = "none";
+    }
+  }
+
+
+  main();
+</script>
+</body>
+</html>
