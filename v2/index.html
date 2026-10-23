@@ -194,6 +194,7 @@
                  style="text-transform:uppercase;" onkeydown="if(event.key==='Enter')searchTyped()">
           <button class="btn btn-outline-success" onclick="searchTyped()">ค้นหา</button>
         </div>
+        <div id="hnFmtHint" class="text-muted small mb-2"></div>
 
         <div id="loadingStatus" class="loading-overlay">⏳ กำลังดำเนินการ...</div>
 
@@ -496,6 +497,7 @@
   let token = "";
   let me = null;               // ข้อมูลเจ้าหน้าที่
   let hnFormat = "";
+  let hnFormatLoaded = false;   // โหลดรูปแบบ HN สำเร็จแล้วหรือยัง (ว่าง = ไม่ได้กำหนดรูปแบบ)
   let currentHn = "";
   let current = null;          // ผล patient.get ล่าสุด
   let pinMode = "pin";         // "pin" = เข้าด้วย PIN · "link" = PIN เพื่อผูก LINE
@@ -540,7 +542,7 @@
     }
     $("btnClose").style.display = inLine ? "" : "none";
 
-    api("meta.config").then(c => { hnFormat = (c.hnFormat || "").toUpperCase(); }).catch(() => {});
+    await loadHnFormat();      // เหมือน LIFF เดิม: โหลดรูปแบบ HN ให้เสร็จก่อนใช้งาน
 
     // มีบัตรผ่านเดิม → ใช้ต่อ
     token = memGet(TOKEN_KEY);
@@ -748,6 +750,34 @@
   // =====================================================
   // HN
   // =====================================================
+  /** โหลดรูปแบบ HN จาก HospitalTable!A2 (ผ่าน meta.config) — คืน true ถ้าโหลดสำเร็จ */
+  async function loadHnFormat() {
+    if (hnFormatLoaded) return true;
+    try {
+      const c = await api("meta.config");
+      hnFormat = String(c.hnFormat || "").trim().toUpperCase();
+      hnFormatLoaded = true;
+    } catch (e) {
+      console.warn("HN format:", e);
+    }
+    $("hnFmtHint").innerText = !hnFormatLoaded ? "⚠ ยังโหลดรูปแบบ HN ไม่ได้"
+      : hnFormat ? `รูปแบบ HN: ${hnFormat}  (N=เลข, C=อักษร)` : "";
+    return hnFormatLoaded;
+  }
+
+  /** ตรวจ HN ก่อนค้นหา (ทั้งสแกนและพิมพ์) — ไม่ผ่านหรือโหลดรูปแบบไม่ได้ = ไม่ค้นหา */
+  async function checkHn(hn) {
+    if (!(await loadHnFormat())) {
+      alert("❌ ตรวจรูปแบบ HN ไม่ได้ (เชื่อมต่อเซิร์ฟเวอร์ไม่ได้)\nลองใหม่อีกครั้ง");
+      return false;
+    }
+    if (!isValidHn(hn)) {
+      alert(`❌ รูปแบบ HN ไม่ถูกต้อง!\nกำหนด: ${hnFormat}\nพบ: ${hn}\n(N=เลข, C=อักษร, - / ตรงตัว)`);
+      return false;
+    }
+    return true;
+  }
+
   function isValidHn(hn) {
     if (!hnFormat) return true;
     const val = hn.trim().toUpperCase();
@@ -767,18 +797,17 @@
       const result = liff.scanCodeV2 ? await liff.scanCodeV2() : await liff.scanCode();
       if (!result || !result.value) return;
       const rawHn = result.value.trim().toUpperCase();
-      if (!isValidHn(rawHn)) {
-        return alert(`❌ รูปแบบ HN ไม่ถูกต้อง!\nกำหนด: ${hnFormat}\nพบ: ${rawHn}\n(N=เลข, C=อักษร, - / ตรงตัว)`);
-      }
+      if (!(await checkHn(rawHn))) return;
       handleSearch(rawHn);
     } catch (err) {
       console.error(err);
     }
   }
 
-  function searchTyped() {
+  async function searchTyped() {
     const hn = $("inHN").value.trim().toUpperCase();
     if (!hn) return;
+    if (!(await checkHn(hn))) return;
     handleSearch(hn);
   }
 
