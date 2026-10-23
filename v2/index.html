@@ -151,7 +151,7 @@
         <button class="btn btn-line big-btn mb-3" onclick="loginWithLine()">🟢 เข้าด้วย LINE</button>
         <button class="btn btn-outline-secondary big-btn" onclick="showPinScreen('pin')">🔢 เข้าด้วย PIN</button>
         <p class="text-muted small mt-3 mb-0">
-          เข้าด้วย LINE ครั้งแรก ระบบจะขอ PIN ครั้งเดียวเพื่อผูกบัญชี
+          เปิดใน LINE ระบบจะเข้าด้วย LINE ให้อัตโนมัติ · ใช้มือถือของคนอื่น ให้เลือก PIN
         </p>
       </div>
 
@@ -163,6 +163,11 @@
                autocomplete="username" style="text-transform:uppercase;">
         <input id="inPin" type="password" inputmode="numeric" maxlength="6" class="form-control form-control-lg mb-3 pin-input"
                placeholder="PIN 6 หลัก" autocomplete="current-password" onkeydown="if(event.key==='Enter')doPinLogin()">
+        <label id="linkChkRow" class="d-flex align-items-start gap-2 text-start small mb-3" style="display:none;cursor:pointer;">
+          <input type="checkbox" id="chkLink" checked style="width:20px;height:20px;flex:none;margin-top:1px;">
+          <span><b>ผูก LINE นี้กับบัญชีของฉัน</b><br>
+            <span class="text-muted">ครั้งหน้าเปิดใน LINE จะเข้าให้อัตโนมัติ · ถ้าใช้มือถือของคนอื่น <u>ไม่ต้องติ๊ก</u></span></span>
+        </label>
         <button class="btn btn-success big-btn" id="btnPinLogin" onclick="doPinLogin()">เข้าสู่ระบบ</button>
         <div class="err-text" id="pinErr"></div>
         <p class="text-muted small mt-2 mb-0">ลืม PIN? ติดต่อ Admin เพื่อออก PIN ใหม่</p>
@@ -231,12 +236,14 @@
           <button class="btn btn-link btn-sm text-muted text-decoration-none" onclick="openChangePin(false)">เปลี่ยน PIN</button>
           ·
           <button class="btn btn-link btn-sm text-muted text-decoration-none" onclick="doLogout()">ออกจากระบบ</button>
+          <span id="swPinWrap">·
+          <button class="btn btn-link btn-sm text-muted text-decoration-none" onclick="switchToPin()">เข้าด้วย PIN แทน</button></span>
         </div>
       </div>
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
-      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 13:45</div>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 14:15</div>
     </div>
   </div>
 </div>
@@ -564,7 +571,8 @@
     }
 
     // ครั้งก่อนเลือก LINE → เข้า LINE อัตโนมัติ
-    if (inLine && memGet(PREF_KEY) === "line") return loginWithLine();
+    // เปิดใน LINE → เข้าด้วย LINE อัตโนมัติ (เลือก PIN ได้จากหน้าหลัก / หน้าเลือกวิธีเข้า)
+    if (inLine) return loginWithLine();
 
     showChoose();
   }
@@ -632,7 +640,9 @@
     $("pinLinkInfo").style.display = mode === "link" ? "block" : "none";
     $("pinLinkInfo").innerText =
       "LINE" + (lineName ? " (" + lineName + ")" : "") +
-      " นี้ยังไม่ได้ผูกกับบัญชีเจ้าหน้าที่ กรอกรหัสเจ้าหน้าที่ + PIN ครั้งเดียว ครั้งต่อไปกด \"เข้าด้วย LINE\" ได้เลย";
+      " นี้ยังไม่ได้ผูกกับบัญชีเจ้าหน้าที่ — กรอกรหัสเจ้าหน้าที่ + PIN";
+    $("linkChkRow").style.setProperty("display", mode === "link" ? "flex" : "none", "important");
+    $("chkLink").checked = true;
     $("pinBack").style.display = inLine ? "" : "none";
     $("inStaff").value = memGet("bip_last_staff");
     $("inPin").value = "";
@@ -647,16 +657,17 @@
     if (!staffId || !pin) return $("pinErr").innerText = "กรุณากรอกรหัสเจ้าหน้าที่และ PIN";
 
     const data = { staffId: staffId, pin: pin };
-    if (pinMode === "link") data.lineIdToken = liff.getIDToken();
+    const doLink = pinMode === "link" && $("chkLink").checked;   // ไม่ติ๊ก = ใช้ PIN ครั้งนี้ ไม่ผูก LINE
+    if (doLink) data.lineIdToken = liff.getIDToken();
 
     $("btnPinLogin").disabled = true;
     $("pinErr").innerText = "";
     try {
       const r = await api("auth.login", data);
       memSet("bip_last_staff", staffId);
-      if (pinMode === "link") {
+      if (doLink) {
         memSet(PREF_KEY, "line");
-        if (r.justLinked) alert("✅ ผูก LINE เรียบร้อย ครั้งต่อไปกด \"เข้าด้วย LINE\" ได้เลย");
+        alert("✅ ผูก LINE เรียบร้อย ครั้งต่อไปเปิดใน LINE จะเข้าให้อัตโนมัติ");
       } else {
         memSet(PREF_KEY, "");
       }
@@ -707,6 +718,15 @@
     }
   }
 
+  /** เปลี่ยนจาก LINE เป็น PIN (เช่น ใช้มือถือคนอื่น) — ออกจากบัญชี LINE นี้แล้วไปหน้า PIN */
+  function switchToPin() {
+    token = ""; me = null;
+    memSet(TOKEN_KEY, "");
+    showPinScreen("pin");
+    $("inStaff").value = "";
+    setTimeout(() => $("inStaff").focus(), 60);
+  }
+
   function doLogout() {
     if (!confirm("ออกจากระบบ?")) return;
     memSet(PREF_KEY, "");
@@ -740,6 +760,7 @@
     $("userChannel").innerText =
       me.channel === "LINE" ? "เข้าด้วย LINE" : "เข้าด้วย PIN";
     showLineProfile();
+    $("swPinWrap").style.display = me.channel === "LINE" ? "" : "none";
 
     const banner = $("pinBanner");
     if (me.channel === "LINE" && !me.hasPin) {
