@@ -236,12 +236,18 @@
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 13:40</div>
     </div>
   </div>
 </div>
 
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  if (/[?&]debug=1/.test(location.search)) {
+    document.write('<script src="../js/vconsole.min.js"><\/script><script>new VConsole();<\/script>');
+  }
+</script>
 <script>
 
   // =====================================================
@@ -515,7 +521,9 @@
       method: "POST",
       body: JSON.stringify(Object.assign({ action: action, token: token }, data || {}))
     });
-    const j = await res.json();
+    let j;
+    try { j = await res.json(); }
+    catch (e) { throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (HTTP " + res.status + ") — ตรวจการ Deploy ของ Apps Script"); }
     if (j.ok) return j.data;
     const err = new Error(j.error || "เกิดข้อผิดพลาด");
     if (j.auth) { err.auth = true; sessionLost(j.error); }
@@ -793,15 +801,24 @@
 
   async function scanCode() {
     if (!inLine) return alert("สแกนได้เฉพาะในแอป LINE — พิมพ์ HN แทน");
+    let result = null;
     try {
-      const result = liff.scanCodeV2 ? await liff.scanCodeV2() : await liff.scanCode();
-      if (!result || !result.value) return;
-      const rawHn = result.value.trim().toUpperCase();
-      if (!(await checkHn(rawHn))) return;
-      handleSearch(rawHn);
+      result = liff.scanCodeV2 ? await liff.scanCodeV2() : await liff.scanCode();
     } catch (err) {
-      console.error(err);
+      console.error("scanCodeV2:", err);
+      try {                                   // สำรอง: ตัวสแกนแบบเดียวกับ LIFF เดิม
+        if (!liff.scanCode) throw err;
+        result = await liff.scanCode();
+      } catch (e2) {
+        return alert("❌ เปิดตัวสแกนไม่ได้\n" + (e2 && (e2.message || e2.code) || e2) +
+          "\n\nตรวจว่าเปิด Scan QR ใน LIFF แล้ว หรือพิมพ์ HN แทน");
+      }
     }
+    const rawHn = String((result && result.value) || "").trim().toUpperCase();
+    if (!rawHn) return;                       // ปิดตัวสแกนโดยไม่ได้สแกน
+    $("inHN").value = rawHn;                  // แสดง HN ที่สแกนได้ในช่อง
+    if (!(await checkHn(rawHn))) return;
+    handleSearch(rawHn);
   }
 
   async function searchTyped() {
