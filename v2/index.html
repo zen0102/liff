@@ -259,7 +259,7 @@
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
-      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 15:05</div>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 15:25</div>
     </div>
   </div>
 </div>
@@ -913,14 +913,7 @@
 
       const rows = [
         ["ชื่อ-สกุล", (p.first + " " + p.last).trim() || "-"],
-        ["วันเวลาเกิด", { html: dobShowHtml(p) }],
-        ["อายุตอนนี้", p.ageNow != null ? p.ageNow + " ชม. (" + (p.ageNow / 24).toFixed(1) + " วัน)" : "-"],
-        ["อายุครรภ์", p.gaText ? p.gaText + " สัปดาห์" : "-"],
-        ["น้ำหนัก", p.weight ? p.weight + " กรัม" : "-"],
-        ["เพศ", p.sex || "-"],
-        ["ปัจจัยเสี่ยงพิษต่อระบบประสาท", p.neuro || "-"],
-        ["ความเสี่ยง", p.risk || "-"],
-        ["PatientID", p.patientId || "-"]
+        ["วันเวลาเกิด", { html: dobShowHtml(p) }]
       ];
       $("patientDetails").innerHTML = rows.map(([k, v]) =>
         `<div class="data-row"><span class="data-label">${esc(k)}</span><span class="text-end">${v && v.html ? v.html : esc(v)}</span></div>`
