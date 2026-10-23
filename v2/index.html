@@ -243,7 +243,7 @@
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
-      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 14:15</div>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 14:25</div>
     </div>
   </div>
 </div>
@@ -766,7 +766,7 @@
     if (me.channel === "LINE" && !me.hasPin) {
       banner.style.display = "block";
       banner.innerHTML = 'ยังไม่มี PIN สำรอง (ใช้ตอนเปิดนอก LINE / บนคอม) · <a href="#" onclick="openChangePin(false);return false;">ตั้ง PIN</a>';
-    } else if (me.pinIsTemp) {
+    } else if (me.pinIsTemp && me.channel !== "LINE") {   // เข้าด้วย LINE ไม่ได้ใช้ PIN → ไม่ต้องเตือน
       banner.style.display = "block";
       banner.innerHTML = 'PIN ของคุณยังเป็น PIN ชั่วคราว · <a href="#" onclick="openChangePin(false);return false;">ตั้ง PIN ใหม่</a>';
     } else banner.style.display = "none";
