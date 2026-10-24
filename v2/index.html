@@ -129,6 +129,37 @@
     .busy-text { font-size: 18px; font-weight: 700; color: #222; }
     .busy-sub { font-size: 13px; color: #777; margin-top: 4px; }
     @keyframes busyspin { to { transform: rotate(360deg); } }
+    /* ===== หน้าแรก / ภาพรวมเด็ก / จอเครื่อง ===== */
+    .btn-home2 { background: #1a73e8; color: #fff; font-weight: bold; padding: 18px; border-radius: 12px;
+      width: 100%; border: none; font-size: 1.2rem; }
+    .nav-back { background: none; border: none; color: #1a73e8; font-weight: 600; padding: 4px 0; margin-bottom: 8px; }
+    .ov-card { border-radius: 14px; padding: 14px; text-align: center; border: 2px solid #ddd; margin-bottom: 12px; }
+    .ov-card.r-High { border-color: #d93025; background: #fce8e6; }
+    .ov-card.r-Medium { border-color: #f29900; background: #fef7e0; }
+    .ov-card.r-Low { border-color: #188038; background: #e6f4ea; }
+    .ov-badge { display: inline-block; font-weight: 700; border-radius: 20px; padding: 3px 12px; font-size: .9rem; color: #fff; }
+    .ov-badge.r-High { background: #d93025; } .ov-badge.r-Medium { background: #e37400; } .ov-badge.r-Low { background: #188038; }
+    .ov-val { font-size: 2.4rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .ov-val small { font-size: 1rem; font-weight: 600; }
+    .ov-sub { font-size: .9rem; color: #444; }
+    .ov-meta { font-size: .8rem; color: #666; margin-top: 4px; }
+    .ov-chart { width: 100%; height: auto; display: block; margin: 4px 0 8px; }
+    .ov-hist { width: 100%; font-size: .85rem; border-collapse: collapse; }
+    .ov-hist th { color: #777; font-weight: 600; text-align: left; border-bottom: 1px solid #eee; padding: 4px 2px; }
+    .ov-hist td { padding: 5px 2px; border-bottom: 1px solid #f3f3f3; font-variant-numeric: tabular-nums; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+    .dot.r-High { background: #d93025; } .dot.r-Medium { background: #f29900; } .dot.r-Low { background: #188038; }
+    .ov-empty { color: #777; text-align: center; padding: 14px; background: #f8f9fa; border-radius: 10px; margin-bottom: 12px; }
+    .btn-editdob { width: 100%; border: 2px solid #188038; color: #188038; background: #fff; font-weight: 700;
+      border-radius: 10px; padding: 10px; margin-top: 6px; }
+    .mon-status { font-size: .85rem; padding: 6px 10px; border-radius: 8px; margin: 8px 0; background: #e8f0fe; color: #1a4fa0; }
+    .mon-status.err { background: #fce8e6; color: #b3261e; }
+    .mon-status.stop, .mon-status.pause { background: #f1f3f4; color: #555; cursor: pointer; }
+    .mon-tag { font-size: .8rem; font-weight: 700; color: #555; }
+    .mon-hn { font-size: 1.15rem; font-weight: 800; color: #00b900; }
+    .ov-card.old { opacity: .75; border-style: dashed; }
+    .ov-card.flash { animation: monflash 1.2s ease 2; }
+    @keyframes monflash { 50% { transform: scale(1.03); box-shadow: 0 0 0 6px rgba(26,115,232,.25); } }
   </style>
 </head>
 
@@ -207,7 +238,8 @@
 
         <div class="warn-box text-start mt-0 mb-3" id="pinBanner" style="display:none;"></div>
 
-        <button id="btnScan" class="btn-scan mb-2" onclick="scanCode()">📷 สแกนรหัส HN</button>
+        <div id="homeView">
+        <button id="btnScan" class="btn-scan mb-2" onclick="scanCode()">📷 สแกน HN · ดูข้อมูลเด็ก</button>
 
         <div class="divider" id="orDivider">หรือพิมพ์ HN</div>
         <div class="input-group mb-2">
@@ -216,24 +248,28 @@
           <button class="btn btn-outline-success" onclick="searchTyped()">ค้นหา</button>
         </div>
         <div id="hnFmtHint" class="text-muted small mb-2"></div>
+        <button class="btn-home2 mt-2" id="btnMonitor" onclick="openMonitor()">📟 จอเครื่อง NeoBil</button>
+        </div>
 
         <div id="loadingStatus" class="loading-overlay">⏳ กำลังดำเนินการ...</div>
 
         <div class="status-box" id="resultArea" style="display:none;">
+          <button class="nav-back" onclick="goHome()">← หน้าแรก</button><br>
           <span class="data-label">เลข HN:</span>
           <div id="scanCodeDisplay" class="hn-highlight mb-2">-</div>
 
           <!-- พบผู้ป่วย -->
           <div id="foundSection" style="display:none;">
-            <p class="text-success fw-bold mb-2">✅ ข้อมูลผู้ป่วย</p>
             <div id="patientDetails" class="mb-3"></div>
+            <div id="overview"></div>
 
-            <div id="editArea">
+            <button class="btn-editdob" id="btnEditDob" onclick="toggleEditDob(true)" style="display:none;">✏ แก้วันเวลาเกิด</button>
+            <div id="editArea" style="display:none;">
               <label class="form-label fw-bold">แก้ไขวันเวลาเกิด:</label>
               <div id="editBirthDate" class="mb-3"></div>
               <button class="btn btn-success w-100 py-2" onclick="confirmSave()">ยืนยันการแก้ไข</button>
+              <button class="btn btn-link w-100 text-muted mt-1" onclick="toggleEditDob(false)">ยกเลิก</button>
             </div>
-            <div id="noEditPermission" class="warn-box" style="display:none;">🔒 คุณไม่มีสิทธิ์แก้ไขข้อมูลผู้ป่วย</div>
           </div>
 
           <!-- ไม่พบ → ลงทะเบียนใหม่ -->
@@ -248,6 +284,30 @@
           </div>
         </div>
 
+        <!-- ===================== จอเครื่อง NeoBil ===================== -->
+        <div class="status-box" id="monitorView" style="display:none;">
+          <button class="nav-back" onclick="goHome()">← หน้าแรก</button>
+          <div id="monSetup">
+            <p class="fw-bold mb-2">📟 เลือกเครื่อง NeoBil</p>
+            <button class="btn-scan mb-2" onclick="scanDevice()">📷 สแกน QR บนเครื่อง</button>
+            <div class="divider">หรือพิมพ์รหัสเครื่อง</div>
+            <div class="input-group mb-2">
+              <input id="inDev" class="form-control form-control-lg" placeholder="เช่น NB-001" autocomplete="off"
+                     style="text-transform:uppercase;" onkeydown="if(event.key==='Enter')startDevTyped()">
+              <button class="btn btn-outline-primary" onclick="startDevTyped()">เริ่ม</button>
+            </div>
+          </div>
+          <div id="monRun" style="display:none;">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="text-start"><b id="monDevId">-</b><div class="small text-muted" id="monDevDesc"></div></div>
+              <button class="btn btn-link btn-sm p-0" onclick="changeDevice()">เปลี่ยนเครื่อง</button>
+            </div>
+            <div id="monStatus" class="mon-status" onclick="monStatusTap()">● กำลังเชื่อมต่อ...</div>
+            <div id="monCard"></div>
+            <div id="monList"></div>
+          </div>
+        </div>
+
         <div class="mt-3">
           <button class="btn btn-link btn-sm text-muted text-decoration-none" onclick="openChangePin(false)">เปลี่ยน PIN</button>
           ·
@@ -259,7 +319,7 @@
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
-      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 23-10-2026 22:50</div>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 24-10-2026 23:30</div>
     </div>
   </div>
 </div>
@@ -936,6 +996,9 @@
   }
 
   function renderResult(r) {
+    if (stopMonitor) stopMonitor();
+    $("homeView").style.display = "none";
+    $("monitorView").style.display = "none";
     $("resultArea").style.display = "block";
     $("scanCodeDisplay").innerText = currentHn;
 
@@ -944,17 +1007,23 @@
       $("foundSection").style.display = "block";
       $("notFoundSection").style.display = "none";
 
-      const rows = [["ชื่อ-สกุล", (p.first + " " + p.last).trim() || "-"]];
-      // คนที่แก้ได้ เห็นวันเวลาเกิดในกรอบ "เดิมในระบบ" อยู่แล้ว · คนที่ไม่มีสิทธิ์แก้ ไม่มีกรอบนั้น → แสดงที่นี่แทน
-      if (!r.canEdit) rows.push(["วันเวลาเกิด", { html: dobShowHtml(p) }]);
+      const rows = [
+        ["ชื่อ-สกุล", (p.first + " " + p.last).trim() || "-"],
+        ["วันเวลาเกิด", { html: dobShowHtml(p) }]
+      ];
+      if (p.ageNow != null) rows.push(["อายุตอนนี้", p.ageNow + " ชม. (" + (p.ageNow / 24).toFixed(1) + " วัน)"]);
+      if (p.gaText) rows.push(["อายุครรภ์", p.gaText + " สัปดาห์"]);
       $("patientDetails").innerHTML = rows.map(([k, v]) =>
         `<div class="data-row"><span class="data-label">${esc(k)}</span><span class="text-end">${v && v.html ? v.html : esc(v)}</span></div>`
       ).join("");
 
-      $("editArea").style.display = r.canEdit ? "block" : "none";
-      $("noEditPermission").style.display = r.canEdit ? "none" : "block";
+      // แก้ DOB: ซ่อนไว้หลังปุ่ม · เฉพาะคนมีสิทธิ์
+      $("btnEditDob").style.display = r.canEdit ? "block" : "none";
+      $("editArea").style.display = "none";
       $("editBirthDate").value = p.birthInput || "";
       $("editBirthDate").setOriginal(p.birthInput || "", p.birthText);
+
+      loadOverview(currentHn);
 
     } else {
       $("foundSection").style.display = "none";
@@ -968,6 +1037,249 @@
       $("newBlocked").innerText = block ? "⚠ " + block : "";
       $("newForm").style.display = block ? "none" : "block";
     }
+  }
+
+  function toggleEditDob(on) {
+    $("editArea").style.display = on ? "block" : "none";
+    $("btnEditDob").style.display = on ? "none" : (current && current.canEdit ? "block" : "none");
+    if (on) setTimeout(() => $("editArea").scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }
+
+  // =====================================================
+  // จอเครื่อง NeoBil — คอยดู record ใหม่ของเครื่องที่เลือก (ทุก 3 วินาที)
+  // =====================================================
+  const MON_KEY = "bip_neobil_dev";          // จำเครื่องล่าสุด
+  const MON_EVERY = 3000;                    // ตรวจทุก 3 วินาที
+  const MON_MAX_MS = 30 * 60 * 1000;         // เปิดค้างเกิน 30 นาที → หยุดเอง
+  let mon = { dev: "", cursor: 0, timer: null, stopped: true, started: 0, list: [] };
+
+  function stopMonitor() {
+    if (mon.timer) clearTimeout(mon.timer);
+    mon.timer = null; mon.stopped = true;
+  }
+
+  function openMonitor() {
+    $("homeView").style.display = "none";
+    $("resultArea").style.display = "none";
+    $("monitorView").style.display = "block";
+    const d = memGet(MON_KEY);
+    if (d) startMonitor(d); else showMonSetup();
+  }
+  function showMonSetup() {
+    stopMonitor();
+    $("monSetup").style.display = "block";
+    $("monRun").style.display = "none";
+    $("inDev").value = "";
+  }
+  function changeDevice() { memSet(MON_KEY, ""); showMonSetup(); }
+  function startDevTyped() { const v = $("inDev").value.trim().toUpperCase(); if (v) startMonitor(v); }
+
+  async function scanDevice() {
+    if (!inLine) return alert("สแกนได้เฉพาะในแอป LINE — พิมพ์รหัสเครื่องแทน");
+    const avail = name => typeof liff[name] === "function" && (!liff.isApiAvailable || liff.isApiAvailable(name));
+    let res = null;
+    for (const fn of ["scanCode", "scanCodeV2"].filter(avail)) {
+      try { res = await liff[fn](); break; } catch (e) { console.error(fn, e); }
+    }
+    let v = String((res && res.value) || "").trim();
+    if (!v) return;
+    const m = /[?&]neobil=([^&#]+)/i.exec(v);                // รองรับ QR แบบลิงก์ ...?neobil=NB-001
+    if (m) v = decodeURIComponent(m[1]);
+    startMonitor(v.toUpperCase());
+  }
+
+  async function startMonitor(id) {
+    stopMonitor();
+    showBusy("กำลังเชื่อมต่อเครื่อง " + id + "...");
+    try {
+      const r = await api("device.latest", { neobilId: id, since: 0 });
+      memSet(MON_KEY, r.device.id);
+      mon = { dev: r.device.id, cursor: r.cursor, timer: null, stopped: false, started: Date.now(), list: [] };
+      $("monDevId").innerText = "📟 " + r.device.id;
+      $("monDevDesc").innerText = r.device.desc || "";
+      $("monSetup").style.display = "none";
+      $("monRun").style.display = "block";
+      $("monList").innerHTML = "";
+      renderMonCard(r.record, false);
+      setMonStatus("ok", "● รอค่าใหม่จากเครื่อง...");
+      hideBusy();
+      schedulePoll();
+    } catch (e) {
+      hideBusy();
+      if (!e.auth) { alert("❌ " + e.message); memSet(MON_KEY, ""); showMonSetup(); }
+    }
+  }
+
+  function schedulePoll(delay) {
+    if (mon.timer) clearTimeout(mon.timer);
+    mon.timer = setTimeout(pollMonitor, delay == null ? MON_EVERY : delay);
+  }
+
+  async function pollMonitor() {
+    mon.timer = null;
+    if (mon.stopped) return;
+    if (document.hidden) return setMonStatus("pause", "⏸ หยุดชั่วคราวระหว่างพับจอ");   // กลับมาเปิดจอ → ตรวจต่อเอง
+    if (Date.now() - mon.started > MON_MAX_MS) {
+      mon.stopped = true;
+      return setMonStatus("stop", "⏹ หยุดตรวจแล้ว (เปิดเกิน 30 นาที) — แตะที่นี่เพื่อเริ่มใหม่");
+    }
+    const dev = mon.dev;
+    try {
+      const r = await api("device.latest", { neobilId: dev, since: mon.cursor });
+      if (mon.stopped || dev !== mon.dev) return;
+      if (r.record) {
+        mon.cursor = r.cursor;
+        renderMonCard(r.record, true);
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      }
+      const t = new Date(), pad = n => String(n).padStart(2, "0");
+      setMonStatus("ok", `● รอค่าใหม่... (ตรวจล่าสุด ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())})`);
+    } catch (e) {
+      if (e.auth) { mon.stopped = true; return; }
+      setMonStatus("err", "⚠ เชื่อมต่อไม่ได้ — กำลังลองใหม่...");
+    }
+    if (!mon.stopped) schedulePoll();
+  }
+
+  function setMonStatus(kind, text) { const el = $("monStatus"); el.className = "mon-status " + kind; el.innerText = text; }
+  function monStatusTap() { if (mon.stopped && mon.dev) startMonitor(mon.dev); }
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && !mon.stopped && $("monitorView").style.display !== "none") schedulePoll(0);
+  });
+
+  function renderMonCard(rec, isNew) {
+    const box = $("monCard");
+    if (!rec) { box.innerHTML = '<div class="ov-empty">ยังไม่มีค่าจากเครื่องนี้ — วัดได้เลย ค่าจะขึ้นที่นี่</div>'; return; }
+
+    const tag = isNew ? '<div class="mon-tag">🆕 ค่าใหม่</div>' : '<div class="mon-tag">ค่าล่าสุดของเครื่อง (ก่อนเปิดจอนี้)</div>';
+    const who = rec.hn
+      ? `<div class="mon-hn">HN ${esc(rec.hn)}</div><div class="ov-sub">${esc(rec.name || "")}</div>` : "";
+    const val = isNaN(rec.bili) ? "-" : rec.bili;
+    let body;
+    if (rec.error) {
+      body = `<div class="ov-val mt-1">${val} <small>mg/dL</small></div><div class="warn-box mt-2">⚠ ${esc(rec.error)}</div>`;
+    } else {
+      body = `<span class="ov-badge r-${rec.risk} mt-1">${RISK_TEXT[rec.risk] || rec.risk}</span>
+        <div class="ov-val mt-1">${val} <small>mg/dL</small></div>
+        <div class="ov-sub">เกณฑ์ ${rec.threshold} · ${gapText(rec.gap)}</div>
+        ${rec.rate != null ? `<div class="ov-sub">${rec.rate >= 0 ? "▲" : "▼"} ${Math.abs(rec.rate).toFixed(2)} mg/dL/ชม.${rec.rapid ? " · ⚠ ขึ้นเร็ว" : ""}</div>` : ""}
+        <div class="ov-meta">วัดเมื่อ ${fmtTime(rec.time || rec.createdMs)} · อายุตอนวัด ${rec.age != null ? rec.age.toFixed(1) : "-"} ชม.</div>`;
+    }
+    const open = rec.hn ? `<button class="btn btn-link btn-sm mt-1" onclick="openFromMonitor('${esc(rec.hn)}')">ดูข้อมูลเด็กคนนี้ →</button>` : "";
+    box.innerHTML = `<div class="ov-card ${rec.risk ? "r-" + rec.risk : ""} ${isNew ? "flash" : "old"}">${tag}${who}${body}${open}</div>`;
+
+    if (isNew) {
+      mon.list.unshift(rec); mon.list = mon.list.slice(0, 5);
+      $("monList").innerHTML = mon.list.length > 1
+        ? '<div class="text-muted small text-start mb-1">ค่าที่ได้ในรอบนี้</div><table class="ov-hist">' +
+          mon.list.map(q => `<tr><td>${fmtTime(q.time || q.createdMs)}</td><td>${esc(q.hn || "-")}</td><td><b>${q.bili}</b></td>
+            <td>${q.risk ? `<span class="dot r-${q.risk}"></span>` : "⚠"}</td></tr>`).join("") + "</table>"
+        : "";
+    }
+  }
+
+  function openFromMonitor(hn) {
+    stopMonitor();
+    $("inHN").value = hn;
+    handleSearch(hn);
+  }
+  function goHome() {
+    stopMonitor && stopMonitor();
+    $("resultArea").style.display = "none";
+    $("monitorView").style.display = "none";
+    $("homeView").style.display = "block";
+    $("inHN").value = "";
+    current = null; currentHn = "";
+    window.scrollTo(0, 0);
+  }
+
+
+  // =====================================================
+  // ภาพรวมเด็ก 1 หน้า (ใช้ข้อมูลชุดเดียวกับกราฟหน้า desktop)
+  // =====================================================
+  const RISK_TEXT = { High: "🔴 ถึงเกณฑ์ส่องไฟ", Medium: "🟡 ใกล้เกณฑ์", Low: "🟢 ต่ำกว่าเกณฑ์" };
+  let overviewSeq = 0;
+
+  function fmtTime(ms) {
+    if (!ms) return "-";
+    const d = new Date(ms), pad = n => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function agoText(ms) {
+    if (!ms) return "";
+    const m = Math.round((Date.now() - ms) / 60000);
+    if (m < 1) return "เมื่อสักครู่";
+    if (m < 60) return m + " นาทีก่อน";
+    const h = m / 60;
+    return h < 48 ? h.toFixed(h < 10 ? 1 : 0) + " ชม.ก่อน" : Math.round(h / 24) + " วันก่อน";
+  }
+  function gapText(gap) {
+    return gap <= 0 ? "เกินเกณฑ์ " + Math.abs(gap).toFixed(1) : "ต่ำกว่าเกณฑ์ " + gap.toFixed(1);
+  }
+  /** อัตราเพิ่ม เทียบกับค่าก่อนหน้าที่ห่าง ≥ 1 ชม. (เหมือนแจ้งเตือน LINE) */
+  function rateAt(pts, idx) {
+    const p = pts[idx];
+    for (let i = idx - 1; i >= 0; i--) {
+      if (p.age - pts[i].age >= 1) return (p.bili - pts[i].bili) / (p.age - pts[i].age);
+    }
+    return null;
+  }
+
+  async function loadOverview(hn) {
+    const seq = ++overviewSeq;
+    const box = $("overview");
+    box.innerHTML = '<div class="ov-empty">⏳ กำลังโหลดค่าบิลิรูบิน...</div>';
+    let d;
+    try { d = await api("chart.get", { hn: hn }); }
+    catch (e) { if (seq === overviewSeq) box.innerHTML = '<div class="ov-empty">โหลดค่าบิลิรูบินไม่ได้: ' + esc(e.message) + '</div>'; return; }
+    if (seq !== overviewSeq) return;                       // ผู้ใช้เปิดเด็กคนอื่นไปแล้ว
+    box.innerHTML = renderOverview(d);
+  }
+
+  function renderOverview(d) {
+    if (!d || d.error) return '<div class="ov-empty">' + esc((d && d.error) || "ไม่มีข้อมูล") + '</div>';
+    const pts = d.points || [];
+    if (!pts.length) return '<div class="ov-empty">ยังไม่มีค่าบิลิรูบินของเด็กคนนี้</div>';
+
+    const i = pts.length - 1, p = pts[i], rate = rateAt(pts, i);
+    const rapid = rate != null && rate >= (p.age < 24 ? 0.3 : 0.2);
+    const card = `
+      <div class="ov-card r-${p.risk}">
+        <span class="ov-badge r-${p.risk}">${RISK_TEXT[p.risk] || p.risk}</span>
+        <div class="ov-val mt-2">${p.bili} <small>mg/dL</small></div>
+        <div class="ov-sub">เกณฑ์ ${p.threshold} · ${gapText(p.gap)}</div>
+        ${rate != null ? `<div class="ov-sub">${rate >= 0 ? "▲" : "▼"} ${Math.abs(rate).toFixed(2)} mg/dL/ชม.${rapid ? " · ⚠ ขึ้นเร็ว" : ""}</div>` : ""}
+        <div class="ov-meta">วัดเมื่อ ${fmtTime(p.time)} (${agoText(p.time)}) · อายุตอนวัด ${p.age.toFixed(1)} ชม.</div>
+      </div>`;
+
+    const hist = pts.slice(-5).reverse().map(q => `
+      <tr><td>${fmtTime(q.time)}</td><td>${q.age.toFixed(1)}</td><td><b>${q.bili}</b></td>
+          <td>${q.threshold}</td><td><span class="dot r-${q.risk}"></span></td></tr>`).join("");
+
+    return card + miniChart(pts, d.threshold) +
+      `<div class="text-muted" style="font-size:.75rem;text-align:left;">${esc((d.threshold && d.threshold.label) || "")}</div>
+       <table class="ov-hist mt-2"><tr><th>วัดเมื่อ</th><th>อายุ(ชม.)</th><th>ค่า</th><th>เกณฑ์</th><th></th></tr>${hist}</table>`;
+  }
+
+  /** กราฟเล็ก (SVG): ค่าบิลิรูบินตามอายุ + เส้นเกณฑ์ */
+  function miniChart(pts, threshold) {
+    const W = 320, H = 170, L = 30, R = 8, T = 8, B = 22;
+    const maxAge = Math.max(72, Math.ceil(pts[pts.length - 1].age / 24) * 24);
+    const thr = ((threshold && threshold.points) || []).filter(t => t.x <= maxAge);
+    const maxY = Math.ceil((Math.max(...pts.map(q => q.bili), ...thr.map(t => t.y), 10) + 2) / 5) * 5;
+    const X = a => L + (a / maxAge) * (W - L - R), Y = v => T + (1 - v / maxY) * (H - T - B);
+    let g = "";
+    for (let v = 0; v <= maxY; v += 5) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#eee"/><text x="${L - 4}" y="${Y(v) + 3}" font-size="9" text-anchor="end" fill="#888">${v}</text>`;
+    const step = maxAge > 168 ? 48 : 24;
+    for (let a = 0; a <= maxAge; a += step) g += `<text x="${X(a)}" y="${H - 6}" font-size="9" text-anchor="middle" fill="#888">${a}</text>`;
+    const thrLine = thr.length ? `<polyline fill="none" stroke="#d93025" stroke-width="1.5" stroke-dasharray="4 3" points="${thr.map(t => X(t.x) + "," + Y(t.y)).join(" ")}"/>` : "";
+    const line = `<polyline fill="none" stroke="#1a73e8" stroke-width="2" points="${pts.map(q => X(q.age) + "," + Y(q.bili)).join(" ")}"/>`;
+    const col = { High: "#d93025", Medium: "#f29900", Low: "#188038" };
+    const dots = pts.map(q => `<circle cx="${X(q.age)}" cy="${Y(q.bili)}" r="3.5" fill="${col[q.risk] || "#1a73e8"}"/>`).join("");
+    return `<svg class="ov-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="กราฟค่าบิลิรูบินตามอายุ">${g}${thrLine}${line}${dots}
+      <text x="${W - R}" y="${T + 9}" font-size="9" text-anchor="end" fill="#d93025">- - เกณฑ์ส่องไฟ</text>
+      <text x="${L}" y="${H - 6}" font-size="9" fill="#888" dx="-26">ชม.</text></svg>`;
   }
 
 
@@ -1012,7 +1324,7 @@
         fields: { birth: birth }
       });
       current = { found: true, canEdit: me.canEdit, patient: r.patient };
-      renderResult(current);
+      renderResult(current);          // ปิดช่องแก้ + โหลดภาพรวมใหม่ (อายุ/เกณฑ์คำนวณจาก DOB ใหม่)
       hideBusy();
       alert("✅ " + r.message);
     } catch (e) {
