@@ -164,7 +164,10 @@
     .draw-chips button { padding: 8px 2px; border-radius: 10px; border: 2px solid #cfd8dc; background: #fff; font-weight: 700; font-size: .95rem; }
     .draw-chips button.on { border-color: #188038; background: #e6f4ea; color: #0d5a26; }
     .draw-time { display: flex; gap: 6px; align-items: center; }
-    .draw-time input { flex: 1; font-size: 22px; text-align: center; letter-spacing: 2px; padding: 6px; border-radius: 8px; border: 1px solid #ccc; }
+    .draw-time input { flex: 1 1 auto; min-width: 0; width: 100%; box-sizing: border-box; font-size: 22px; text-align: center; letter-spacing: 2px; padding: 6px; border-radius: 8px; border: 1px solid #ccc; }
+    .draw-box, .draw-box * { box-sizing: border-box; }
+    .draw-box { width: 100%; max-width: 100%; overflow: hidden; }
+    .draw-chips button { min-width: 0; }
     .draw-read { font-size: .85rem; color: #555; margin-top: 6px; text-align: center; min-height: 1.2em; }
     .draw-read.bad { color: #b3261e; }
     .mon-hn { font-size: 1.15rem; font-weight: 800; color: #00b900; }
@@ -330,7 +333,7 @@
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
-      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 14-11-2026 09:40</div>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 14-11-2026 09:30b</div>
     </div>
   </div>
 </div>
