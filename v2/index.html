@@ -156,6 +156,17 @@
     .mon-status.err { background: #fce8e6; color: #b3261e; }
     .mon-status.stop, .mon-status.pause { background: #f1f3f4; color: #555; cursor: pointer; }
     .mon-tag { font-size: .8rem; font-weight: 700; color: #555; }
+    .draw-warn { background: #fff4e5; color: #8a4b00; border: 1px solid #f5c58a; border-radius: 8px;
+      padding: 6px 10px; margin-top: 8px; font-size: .9rem; font-weight: 600; }
+    .draw-ok { color: #0d5a26; font-size: .85rem; margin-top: 6px; }
+    .draw-box { background: #f8f9fa; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin-top: 8px; text-align: left; }
+    .draw-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+    .draw-chips button { padding: 8px 2px; border-radius: 10px; border: 2px solid #cfd8dc; background: #fff; font-weight: 700; font-size: .95rem; }
+    .draw-chips button.on { border-color: #188038; background: #e6f4ea; color: #0d5a26; }
+    .draw-time { display: flex; gap: 6px; align-items: center; }
+    .draw-time input { flex: 1; font-size: 22px; text-align: center; letter-spacing: 2px; padding: 6px; border-radius: 8px; border: 1px solid #ccc; }
+    .draw-read { font-size: .85rem; color: #555; margin-top: 6px; text-align: center; min-height: 1.2em; }
+    .draw-read.bad { color: #b3261e; }
     .mon-hn { font-size: 1.15rem; font-weight: 800; color: #00b900; }
     .ov-card.old { opacity: .75; border-style: dashed; }
     .ov-card.flash { animation: monflash 1.2s ease 2; }
@@ -319,7 +330,7 @@
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
-      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 24-10-2026 23:30</div>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 14-11-2026 09:40</div>
     </div>
   </div>
 </div>
@@ -1052,6 +1063,7 @@
   const MON_EVERY = 3000;                    // ตรวจทุก 3 วินาที
   const MON_MAX_MS = 30 * 60 * 1000;         // เปิดค้างเกิน 30 นาที → หยุดเอง
   let mon = { dev: "", cursor: 0, timer: null, stopped: true, started: 0, list: [] };
+  let monCur = null;                          // record ที่แสดงบนการ์ดตอนนี้ (ใช้กับปุ่ม ✏ ใส่เวลาเจาะ)
 
   function stopMonitor() {
     if (mon.timer) clearTimeout(mon.timer);
@@ -1164,10 +1176,14 @@
         <div class="ov-val mt-1">${val} <small>mg/dL</small></div>
         <div class="ov-sub">เกณฑ์ ${rec.threshold} · ${gapText(rec.gap)}</div>
         ${rec.rate != null ? `<div class="ov-sub">${rec.rate >= 0 ? "▲" : "▼"} ${Math.abs(rec.rate).toFixed(2)} mg/dL/ชม.${rec.rapid ? " · ⚠ ขึ้นเร็ว" : ""}</div>` : ""}
-        <div class="ov-meta">วัดเมื่อ ${fmtTime(rec.time || rec.createdMs)} · อายุตอนวัด ${rec.age != null ? rec.age.toFixed(1) : "-"} ชม.</div>`;
+        <div class="ov-meta">${rec.drawMs && Math.abs(rec.drawMs - rec.createdMs) >= 60000
+          ? `เจาะ ${fmtTime(rec.drawMs)} · วัด ${fmtTime(rec.createdMs)}` : `วัดเมื่อ ${fmtTime(rec.createdMs || rec.time)}`}
+          · อายุตอนเจาะ ${rec.age != null ? rec.age.toFixed(1) : "-"} ชม.</div>
+        ${drawSection(rec)}`;
     }
     const open = rec.hn ? `<button class="btn btn-link btn-sm mt-1" onclick="openFromMonitor('${esc(rec.hn)}')">ดูข้อมูลเด็กคนนี้ →</button>` : "";
     box.innerHTML = `<div class="ov-card ${rec.risk ? "r-" + rec.risk : ""} ${isNew ? "flash" : "old"}">${tag}${who}${body}${open}</div>`;
+    monCur = rec;
 
     if (isNew) {
       mon.list.unshift(rec); mon.list = mon.list.slice(0, 5);
@@ -1176,6 +1192,83 @@
           mon.list.map(q => `<tr><td>${fmtTime(q.time || q.createdMs)}</td><td>${esc(q.hn || "-")}</td><td><b>${q.bili}</b></td>
             <td>${q.risk ? `<span class="dot r-${q.risk}"></span>` : "⚠"}</td></tr>`).join("") + "</table>"
         : "";
+    }
+  }
+
+  // ---------- ✏ ใส่เวลาเจาะ (เฉพาะผลวัดที่สแกน HN ที่เครื่อง: SampleID ขึ้นต้น B-) ----------
+  function drawSection(rec) {
+    if (!rec.drawEditable) return "";
+    const pad = n => String(n).padStart(2, "0"), hm = ms => { const d = new Date(ms); return pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+    const line = rec.drawIsMeasure
+      ? `<div class="draw-warn">⚠ เวลาเจาะ = เวลาวัด ${hm(rec.createdMs)} น.</div>`
+      : `<div class="draw-ok">✅ ใส่เวลาเจาะแล้ว ${hm(rec.drawMs)} น.</div>`;
+    return line + `<div id="drawArea"><button class="btn btn-outline-warning btn-sm mt-2" onclick="openDrawEdit()">✏ ${rec.drawIsMeasure ? "ใส่" : "แก้"}เวลาเจาะ</button></div>`;
+  }
+
+  function openDrawEdit() {
+    if (!monCur) return;
+    $("drawArea").innerHTML = `<div class="draw-box">
+      <div class="small fw-bold mb-1">เจาะเลือดก่อนวัดนานเท่าไร</div>
+      <div class="draw-chips">
+        <button type="button" onclick="drawAgo(15, this)">15 นาที</button>
+        <button type="button" onclick="drawAgo(30, this)">30 นาที</button>
+        <button type="button" onclick="drawAgo(60, this)">1 ชม.</button>
+      </div>
+      <div class="small fw-bold mb-1">หรือพิมพ์เวลาเจาะ (24 ชม.) 4 ตัว เช่น 0830</div>
+      <div class="draw-time"><input id="drawIn" type="text" inputmode="numeric" maxlength="5" placeholder="ชช:นน" oninput="drawTyped()"><span>น.</span></div>
+      <div class="draw-read" id="drawRead"></div>
+      <div class="d-flex gap-2 mt-2">
+        <button class="btn btn-light flex-fill" onclick="cancelDraw()">ยกเลิก</button>
+        <button class="btn btn-success flex-fill" id="drawSave" onclick="saveDraw()" disabled>บันทึก</button>
+      </div></div>`;
+    window.drawMs = null;
+  }
+
+  /** เวลาเจาะที่เลือก → ms (ถ้าพิมพ์เวลาที่เลยเวลาวัด ถือว่าเป็นของเมื่อวาน) */
+  function drawSet(ms) {
+    const pad = n => String(n).padStart(2, "0");
+    window.drawMs = ms;
+    const r = $("drawRead");
+    if (ms == null) { r.className = "draw-read"; r.innerText = ""; $("drawSave").disabled = true; return; }
+    const d = new Date(ms), mins = Math.round((monCur.createdMs - ms) / 60000);
+    r.className = "draw-read";
+    r.innerHTML = `เวลาเจาะ <b>${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())} น.</b> · ก่อนวัด ${mins >= 60 ? (mins / 60).toFixed(1) + " ชม." : mins + " นาที"}`;
+    $("drawSave").disabled = false;
+  }
+  function drawAgo(min, btn) {
+    document.querySelectorAll(".draw-chips button").forEach(b => b.classList.toggle("on", b === btn));
+    $("drawIn").value = "";
+    drawSet(monCur.createdMs - min * 60000);
+  }
+  function drawTyped() {
+    document.querySelectorAll(".draw-chips button").forEach(b => b.classList.remove("on"));
+    const el = $("drawIn"), g = el.value.replace(/\D/g, "").slice(0, 4);
+    el.value = g.length > 2 ? g.slice(0, 2) + ":" + g.slice(2) : g;
+    if (g.length < 3) return drawSet(null);
+    const h = +g.slice(0, g.length - 2), m = +g.slice(-2);
+    if (h > 23 || m > 59) { drawSet(null); $("drawRead").className = "draw-read bad"; $("drawRead").innerText = "เวลาไม่ถูกต้อง — ชั่วโมง 00–23 นาที 00–59"; return; }
+    const d = new Date(monCur.createdMs); d.setHours(h, m, 0, 0);
+    if (d.getTime() > monCur.createdMs + 60000) d.setDate(d.getDate() - 1);
+    drawSet(d.getTime());
+  }
+  function cancelDraw() {
+    const tag = $("monCard").querySelector(".mon-tag"), t = tag ? tag.innerText : "";
+    renderMonCard(monCur, false);
+    const t2 = $("monCard").querySelector(".mon-tag"); if (t2 && t) t2.innerText = t;
+  }
+  async function saveDraw() {
+    if (!monCur || window.drawMs == null) return;
+    const old = monCur;
+    showBusy("กำลังบันทึกเวลาเจาะ...");
+    try {
+      const rec = await api("sample.setDrawTime", { sampleId: old.sampleId, drawMs: window.drawMs });
+      hideBusy();
+      mon.list = mon.list.map(q => q.measurementId === rec.measurementId ? rec : q);
+      renderMonCard(rec, false);
+      $("monCard").querySelector(".mon-tag").innerText = "✅ บันทึกเวลาเจาะแล้ว";
+    } catch (e) {
+      hideBusy();
+      if (!e.auth) alert("❌ " + e.message);
     }
   }
 
