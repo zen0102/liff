@@ -256,13 +256,14 @@
         <button id="btnScan" class="btn-scan mb-2" onclick="scanCode()">📷 สแกน HN · ดูข้อมูลเด็ก</button>
 
         <div class="divider" id="orDivider">หรือพิมพ์ HN</div>
-        <div class="input-group mb-2">
+        <div class="input-group mb-2" id="hnBox">
           <input id="inHN" class="form-control form-control-lg" placeholder="HN" autocomplete="off"
                  style="text-transform:uppercase;" onkeydown="if(event.key==='Enter')searchTyped()">
           <button class="btn btn-outline-success" onclick="searchTyped()">ค้นหา</button>
         </div>
         <div id="hnFmtHint" class="text-muted small mb-2"></div>
         <button class="btn-home2 mt-2" id="btnMonitor" onclick="openMonitor()">📟 จอเครื่อง NeoBil</button>
+        <div class="warn-box" id="noTabsMsg" style="display:none;">บัญชีนี้ยังไม่ได้รับสิทธิ์ใช้งานส่วนใดเลย — ติดต่อ Admin</div>
         </div>
 
         <div id="loadingStatus" class="loading-overlay">⏳ กำลังดำเนินการ...</div>
@@ -288,7 +289,7 @@
 
           <!-- ไม่พบ → ลงทะเบียนใหม่ -->
           <div id="notFoundSection" style="display:none;">
-            <p class="text-primary fw-bold mb-2">🆕 ไม่พบข้อมูล — ลงทะเบียนใหม่</p>
+            <p class="text-primary fw-bold mb-2" id="nfTitle">🆕 ไม่พบข้อมูล — ลงทะเบียนใหม่</p>
             <div id="newBlocked" class="warn-box" style="display:none;"></div>
             <div id="newForm">
               <label class="form-label fw-bold">ระบุวันเวลาเกิด:</label>
@@ -333,7 +334,7 @@
 
       <button class="btn btn-link btn-sm mt-2 text-muted text-decoration-none" id="btnClose"
               onclick="liff.closeWindow()" style="display:none;">ปิดหน้าต่าง</button>
-      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 14-11-2026 09:30b</div>
+      <div class="text-muted" style="font-size:0.7rem;opacity:.6;">v2 · 17-11-2026 22:45 · สิทธิ์ตามบทบาท</div>
     </div>
   </div>
 </div>
@@ -894,9 +895,22 @@
       banner.innerHTML = 'PIN ของคุณยังเป็น PIN ชั่วคราว · <a href="#" onclick="openChangePin(false);return false;">ตั้ง PIN ใหม่</a>';
     } else banner.style.display = "none";
 
-    $("btnScan").style.display = inLine ? "" : "none";
+    // ปุ่มตามสิทธิ์ (ตาราง RoleTabs ใน Sheet)
+    const canPat = !!tabLv("liff-patient"), canMon = !!tabLv("liff-neobil");
+    $("btnScan").style.display = inLine && canPat ? "" : "none";
+    $("orDivider").style.display = canPat ? "" : "none";
+    $("hnBox").style.display = canPat ? "" : "none";
+    $("hnFmtHint").style.display = canPat ? "" : "none";
     $("orDivider").innerText = inLine ? "หรือพิมพ์ HN" : "พิมพ์ HN";
+    $("btnMonitor").style.display = canMon ? "" : "none";
+    $("noTabsMsg").style.display = canPat || canMon ? "none" : "block";
     show("scrMain");
+  }
+
+  /** สิทธิ์ของเมนูใน LINE → "EDIT" | "VIEW" | "" (backend เก่าไม่ส่ง tabs = ใช้ได้ทุกเมนู) */
+  function tabLv(key) {
+    if (!me || !me.tabs) return "EDIT";
+    return me.tabs[key] || "";
   }
 
 
@@ -1044,6 +1058,15 @@
       $("notFoundSection").style.display = "block";
       $("newBirthDate").value = "";
 
+      // ดูอย่างเดียว (เช่น แพทย์) → แจ้งไม่พบ ไม่แสดงฟอร์มลงทะเบียน
+      const viewOnly = r.viewOnly || tabLv("liff-patient") !== "EDIT";
+      $("nfTitle").innerText = viewOnly ? "ไม่พบ HN นี้ในระบบ" : "🆕 ไม่พบข้อมูล — ลงทะเบียนใหม่";
+      if (viewOnly) {
+        $("newBlocked").style.display = "none";
+        $("newForm").style.display = "none";
+        return;
+      }
+
       let block = "";
       if (r.canCreate === false) block = "HN ขึ้นต้นด้วย SIM สงวนไว้สำหรับข้อมูลจำลอง";
       else if (r.formatOk === false) block = `รูปแบบ HN ไม่ถูกต้อง (กำหนด ${r.hnFormat}) — ลงทะเบียนไม่ได้`;
@@ -1074,6 +1097,7 @@
   }
 
   function openMonitor() {
+    if (!tabLv("liff-neobil")) return alert("คุณไม่มีสิทธิ์ใช้จอเครื่อง NeoBil");
     $("homeView").style.display = "none";
     $("resultArea").style.display = "none";
     $("monitorView").style.display = "block";
